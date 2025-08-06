@@ -1,19 +1,17 @@
 <template>
   <div class="sidebar">
     <!-- 用户头像区域 -->
-    <div class="user-section">
-      <div class="user-avatar" @click="toggleUserMenu">
-        <img :src="userInfo.avatar" alt="用户头像" />
-        <div class="status-indicator" :class="userInfo.status"></div>
-      </div>
+    <div class="user-avatar" @click="toggleUserMenu">
+      <img :src="currentUserAvatar" alt="用户头像" />
+      <div v-if="userStore.user?.isOnline" class="status-indicator" :class="userStore.user?.status"></div>
     </div>
 
     <!-- 用户信息菜单 -->
     <div v-if="showUserMenu" class="user-menu-overlay" @click="closeUserMenu">
-      <div class="user-menu" :class="`status-${userInfo.status}`" @click.stop>
+      <div class="user-menu" @click.stop>
         <div class="user-menu-header">
           <div class="user-menu-avatar" @click="selectAvatar">
-            <img :src="userInfo.avatar" alt="用户头像" />
+            <img :src="currentUserAvatar" alt="用户头像" />
             <div class="avatar-edit-hint">点击更换头像</div>
           </div>
           <div class="user-menu-info">
@@ -244,7 +242,7 @@
       <!-- 联系人 -->
       <div class="nav-item" @click="setActive('contacts')" :class="{ active: activeItem === 'contacts' }">
         <n-icon size="24" color="#fff">
-          <PersonIcon />
+          <PersonOutline />
         </n-icon>
         <div class="notification-badge">5</div>
       </div>
@@ -280,14 +278,16 @@
       <!-- 收藏 -->
       <div class="nav-item" @click="setActive('favorites')" :class="{ active: activeItem === 'favorites' }">
         <n-icon size="24" color="#fff">
-          <StarIcon />
+          <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
         </n-icon>
       </div>
 
       <!-- 设置 -->
       <div class="nav-item" @click="setActive('settings')" :class="{ active: activeItem === 'settings' }">
         <n-icon size="24" color="#fff">
-          <SettingsIcon />
+          <SettingsOutline />
         </n-icon>
       </div>
     </div>
@@ -295,17 +295,32 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { NIcon } from 'naive-ui'
-import {
-  Person as PersonIcon,
-  Star as StarIcon,
-  Settings as SettingsIcon
-} from '@vicons/ionicons5'
+import { PersonOutline, ChatbubbleEllipsesOutline, PeopleOutline, SettingsOutline, CloseOutline } from '@vicons/ionicons5'
+import { NIcon, NButton, NInput, NSelect, NModal, NCard, NForm, NFormItem, NDatePicker, NRadioGroup, NRadio, useMessage } from 'naive-ui'
+import { useUserStore } from '@/stores/user'
+import { uploadAPI } from '@/services/api'
+import socketService from '@/services/socket'
 
 const router = useRouter()
 const route = useRoute()
+const message = useMessage()
+const userStore = useUserStore()
+
+// 计算用户头像，提供fallback
+const currentUserAvatar = computed(() => {
+  // 如果用户已登录且有头像
+  if (userStore.user?.profile?.avatar) {
+    if (userStore.user.profile.avatar.startsWith('http')) {
+      return userStore.user.profile.avatar
+    }
+    // 避免404错误，直接使用本地fallback
+    return userInfo.value.avatar
+  }
+  // 使用本地用户信息的头像或默认头像
+  return userInfo.value.avatar || '/logo.png'
+})
 
 // 根据当前路由确定活跃项
 const activeItem = computed(() => {
@@ -347,16 +362,38 @@ const statusOptions = ref([
 const flyingLikes = ref([])
 let likeIdCounter = 0
 
-// 用户信息
-const userInfo = ref({
-  name: '南山无落梅',
-  id: '3031688968',
-  avatar: '/logo.png',
-  status: 'online',
-  statusText: '在线',
-  signature: '白露横江，水光接天。纵一苇之所如，凌万顷之茫然',
-  location: '基辅',
-  likes: 9999
+// 用户信息 - 从 store 获取真实数据
+const userInfo = computed(() => {
+  const user = userStore.user
+  if (user) {
+    // 支持多种用户对象结构
+    const userId = user.userId || user.profile?.userId || '未知ID'
+    const displayName = user.profile?.displayName || user.displayName || user.profile?.username || user.username || '未设置名称'
+    const avatar = user.profile?.avatar || user.avatar || '/logo.png'
+    const signature = user.profile?.signature || user.signature || '这个人很懒，什么都没有留下'
+    const location = user.profile?.location || user.location || '未知位置'
+    
+    return {
+      name: displayName,
+      id: userId,
+      avatar: avatar,
+      status: 'online',
+      statusText: '在线',
+      signature: signature,
+      location: location,
+      likes: 9999
+    }
+  }
+  return {
+    name: '未登录',
+    id: '00000',
+    avatar: '/logo.png',
+    status: 'offline',
+    statusText: '离线',
+    signature: '请先登录',
+    location: '未知',
+    likes: 0
+  }
 })
 
 // 用户菜单方法
@@ -369,18 +406,42 @@ const closeUserMenu = () => {
 }
 
 const selectAvatar = () => {
-  fileInput.value?.click()
+  fileInput.value.click()
 }
 
-const handleAvatarChange = (event) => {
+const handleAvatarChange = async (event) => {
   const file = event.target.files[0]
   if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      userInfo.value.avatar = e.target.result
+    // 检查文件类型
+    if (!file.type.startsWith('image/')) {
+      alert('请选择图片文件')
+      return
     }
-    reader.readAsDataURL(file)
+    
+    // 检查文件大小（限制为5MB）
+    if (file.size > 5 * 1024 * 1024) {
+      alert('图片大小不能超过5MB')
+      return
+    }
+
+    try {
+      // 使用 userStore 的上传头像功能
+      const result = await userStore.uploadAvatar(file)
+      
+      if (result.success) {
+        console.log('头像上传成功:', result.avatarPath)
+        // 头像已经在 userStore.uploadAvatar 中更新，这里不需要额外操作
+      } else {
+        console.error('头像上传失败:', result.error)
+        alert('头像上传失败: ' + result.error)
+      }
+    } catch (error) {
+      console.error('头像上传异常:', error)
+      alert('头像上传失败，请重试')
+    }
   }
+  // 清空输入，允许重复选择同一文件
+  event.target.value = ''
 }
 
 // 签名编辑相关方法

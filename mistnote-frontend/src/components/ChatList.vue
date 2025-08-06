@@ -81,20 +81,204 @@
       class="resize-handle"
       @mousedown="startResize"
     ></div>
+
+    <!-- 添加聊天弹窗 -->
+    <div v-if="showAddModal" class="modal-overlay" @click="showAddModal = false">
+      <div class="add-chat-modal" @click.stop>
+        <div class="modal-header">
+          <h3>添加聊天</h3>
+          <button class="close-btn" @click="showAddModal = false">×</button>
+        </div>
+        
+        <div class="modal-tabs">
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'friend' }"
+            @click="activeTab = 'friend'"
+          >
+            添加好友
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'group' }"
+            @click="activeTab = 'group'"
+          >
+            创建群聊
+          </button>
+        </div>
+        
+        <div class="modal-content">
+          <!-- 添加好友表单 -->
+          <div v-if="activeTab === 'friend'" class="add-form">
+            <div class="form-group">
+              <label class="form-label">用户ID <span class="required">*</span></label>
+              <div class="input-wrapper">
+                <input
+                  v-model="friendForm.userId"
+                  type="text"
+                  placeholder="请输入5位数用户ID"
+                  maxlength="5"
+                  class="form-input"
+                />
+                <span class="input-count">{{ friendForm.userId.length }}/5</span>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">备注名称</label>
+              <div class="input-wrapper">
+                <input
+                  v-model="friendForm.nickname"
+                  type="text"
+                  placeholder="可选，为好友设置备注名称"
+                  class="form-input"
+                />
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">验证消息 <span class="required">*</span></label>
+              <div class="input-wrapper">
+                <textarea
+                  v-model="friendForm.message"
+                  placeholder="我是..."
+                  maxlength="100"
+                  rows="3"
+                  class="form-textarea"
+                ></textarea>
+                <span class="input-count">{{ friendForm.message.length }}/100</span>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button class="cancel-btn" @click="showAddModal = false">取消</button>
+              <button class="primary-btn" @click="addFriend" :disabled="isAddingFriend">
+                <span v-if="isAddingFriend">发送中...</span>
+                <span v-else>发送好友请求</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- 创建群聊表单 -->
+          <div v-if="activeTab === 'group'" class="add-form">
+            <div class="form-group">
+              <label class="form-label">群聊名称 <span class="required">*</span></label>
+              <div class="input-wrapper">
+                <input
+                  v-model="groupForm.groupName"
+                  type="text"
+                  placeholder="请输入群聊名称"
+                  maxlength="20"
+                  class="form-input"
+                />
+                <span class="input-count">{{ groupForm.groupName.length }}/20</span>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">群聊描述</label>
+              <div class="input-wrapper">
+                <textarea
+                  v-model="groupForm.description"
+                  placeholder="可选，描述群聊的用途"
+                  maxlength="200"
+                  rows="3"
+                  class="form-textarea"
+                ></textarea>
+                <span class="input-count">{{ groupForm.description.length }}/200</span>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">邀请好友</label>
+              <div class="select-wrapper">
+                <select
+                  v-model="groupForm.inviteUsers"
+                  multiple
+                  class="form-select"
+                >
+                  <option v-for="friend in friendOptions" :key="friend.value" :value="friend.value">
+                    {{ friend.label }}
+                  </option>
+                </select>
+                <div class="select-placeholder" v-if="groupForm.inviteUsers.length === 0">
+                  选择要邀请的好友
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button class="cancel-btn" @click="showAddModal = false">取消</button>
+              <button class="primary-btn" @click="createGroup" :disabled="isCreatingGroup">
+                <span v-if="isCreatingGroup">创建中...</span>
+                <span v-else>创建群聊</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { NIcon } from 'naive-ui'
+import { NIcon, NModal, NTabs, NTabPane, NForm, NFormItem, NInput, NSelect, NButton } from 'naive-ui'
 import {
   Search as SearchIcon,
   Add as AddIcon,
   VolumeOff as MuteIcon
 } from '@vicons/ionicons5'
+import { useUserStore } from '../stores/user'
+import { useMessage } from 'naive-ui'
+
+const userStore = useUserStore()
+const message = useMessage()
 
 const searchQuery = ref('')
 const activeChatId = ref(1)
+
+// 添加聊天弹窗相关
+const showAddModal = ref(false)
+const activeTab = ref('friend')
+const isAddingFriend = ref(false)
+const isCreatingGroup = ref(false)
+
+// 添加好友表单
+const friendFormRef = ref(null)
+const friendForm = ref({
+  userId: '',
+  nickname: '',
+  message: '我是' + (userStore.user?.profile?.displayName || userStore.user?.userId || '用户')
+})
+
+const friendRules = {
+  userId: [
+    { required: true, message: '请输入用户ID', trigger: 'blur' },
+    { pattern: /^\d{5}$/, message: '用户ID必须是5位数字', trigger: 'blur' }
+  ],
+  message: [
+    { required: true, message: '请输入验证消息', trigger: 'blur' }
+  ]
+}
+
+// 创建群聊表单
+const groupFormRef = ref(null)
+const groupForm = ref({
+  groupName: '',
+  description: '',
+  inviteUsers: []
+})
+
+const groupRules = {
+  groupName: [
+    { required: true, message: '请输入群聊名称', trigger: 'blur' },
+    { min: 2, max: 20, message: '群聊名称长度为2-20个字符', trigger: 'blur' }
+  ]
+}
+
+// 好友选项（用于创建群聊时邀请）
+const friendOptions = ref([])
 
 // 聊天列表宽度控制
 const chatListWidth = ref(280)
@@ -280,8 +464,142 @@ const getBadgeDragStyle = (chatId) => {
 
 // 添加聊天
 const addChat = () => {
-  console.log('添加聊天')
+  showAddModal.value = true
+  activeTab.value = 'friend'
+  // 重置表单
+  friendForm.value = {
+    userId: '',
+    nickname: '',
+    message: '我是' + (userStore.user?.profile?.displayName || userStore.user?.userId || '用户')
+  }
+  groupForm.value = {
+    groupName: '',
+    description: '',
+    inviteUsers: []
+  }
 }
+
+// 添加好友
+const addFriend = async () => {
+  try {
+    // 表单验证
+    await friendFormRef.value?.validate()
+    
+    isAddingFriend.value = true
+    
+    // 调用后端API添加好友
+    const response = await fetch('http://localhost:5000/api/friends/request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      },
+      body: JSON.stringify({
+        targetUserId: friendForm.value.userId,
+        nickname: friendForm.value.nickname,
+        message: friendForm.value.message
+      })
+    })
+    
+    const result = await response.json()
+    
+    if (response.ok) {
+      message.success('好友请求已发送')
+      showAddModal.value = false
+      
+      // 可选：刷新好友列表或聊天列表
+      await loadFriends()
+    } else {
+      message.error(result.message || '发送好友请求失败')
+    }
+  } catch (error) {
+    console.error('添加好友失败:', error)
+    message.error('添加好友失败，请检查网络连接')
+  } finally {
+    isAddingFriend.value = false
+  }
+}
+
+// 创建群聊
+const createGroup = async () => {
+  try {
+    // 表单验证
+    await groupFormRef.value?.validate()
+    
+    isCreatingGroup.value = true
+    
+    // 调用后端API创建群聊
+    const response = await fetch('http://localhost:5000/api/groups/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      },
+      body: JSON.stringify({
+        groupName: groupForm.value.groupName,
+        description: groupForm.value.description,
+        inviteUsers: groupForm.value.inviteUsers
+      })
+    })
+    
+    const result = await response.json()
+    
+    if (response.ok) {
+      message.success('群聊创建成功')
+      showAddModal.value = false
+      
+      // 添加新群聊到聊天列表
+      chatList.value.unshift({
+        id: result.group.id,
+        name: result.group.name,
+        avatar: result.group.avatar || '/logo.png',
+        lastMessage: '群聊已创建',
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        unreadCount: 0,
+        online: false,
+        muted: false,
+        messageType: 'normal',
+        isGroup: true
+      })
+    } else {
+      message.error(result.message || '创建群聊失败')
+    }
+  } catch (error) {
+    console.error('创建群聊失败:', error)
+    message.error('创建群聊失败，请检查网络连接')
+  } finally {
+    isCreatingGroup.value = false
+  }
+}
+
+// 加载好友列表（用于群聊邀请）
+const loadFriends = async () => {
+  try {
+    const response = await fetch('http://localhost:5000/api/friends', {
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    
+    if (response.ok) {
+      const friends = await response.json()
+      friendOptions.value = friends.map(friend => ({
+        label: friend.nickname || friend.displayName || friend.userId,
+        value: friend.userId
+      }))
+    }
+  } catch (error) {
+    console.error('加载好友列表失败:', error)
+  }
+}
+
+// 组件初始化
+onMounted(() => {
+  // 如果用户已登录，加载好友列表
+  if (userStore.token) {
+    loadFriends()
+  }
+})
 
 // 开始拖拽聊天项
 const startDrag = (e, chatId) => {
@@ -807,5 +1125,371 @@ onUnmounted(() => {
     transform: translate(-50%, -50%) scale(2);
     opacity: 0.2;
   }
+}
+
+/* 模态框遮罩层 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* 添加聊天弹窗样式 - 与主题保持一致 */
+.add-chat-modal {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+/* 弹窗头部 */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.close-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: #999;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #f5f5f5;
+  color: #666;
+}
+
+/* 标签页 */
+.modal-tabs {
+  display: flex;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+  color: #333;
+  background: #f9f9f9;
+}
+
+.tab-btn.active {
+  color: #1890ff;
+  border-bottom-color: #1890ff;
+  font-weight: 500;
+}
+
+/* 弹窗内容 */
+.modal-content {
+  padding: 20px;
+}
+
+.add-form {
+  padding: 0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* 原生按钮样式 - 与应用主题保持一致 */
+.form-actions .cancel-btn {
+  min-width: 80px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 14px;
+  border: 1px solid #d9d9d9;
+  background: #fff;
+  color: #666;
+  padding: 0 16px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: 400;
+  outline: none;
+}
+
+.form-actions .cancel-btn:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.form-actions .cancel-btn:active {
+  background: #f5f5f5;
+}
+
+.form-actions .primary-btn {
+  min-width: 80px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 14px;
+  border: 1px solid #1890ff;
+  background: #1890ff;
+  color: #fff;
+  padding: 0 16px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: 500;
+  outline: none;
+}
+
+.form-actions .primary-btn:hover:not(:disabled) {
+  background: #40a9ff;
+  border-color: #40a9ff;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+}
+
+.form-actions .primary-btn:active:not(:disabled) {
+  background: #096dd9;
+  border-color: #096dd9;
+}
+
+.form-actions .primary-btn:disabled {
+  background: #f5f5f5;
+  border-color: #d9d9d9;
+  color: #bfbfbf;
+  cursor: not-allowed;
+}
+
+/* 表单项间距 */
+.add-form .n-form-item {
+  margin-bottom: 16px;
+}
+
+.add-form .n-form-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 标签样式 */
+.add-form .n-form-item-label {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+/* 表单组 */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* 表单标签 */
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.required {
+  color: #ff4d4f;
+}
+
+/* 输入框包装器 */
+.input-wrapper {
+  position: relative;
+}
+
+/* 输入框样式 - 与主界面保持一致 */
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.form-input::placeholder {
+  color: #999;
+}
+
+.form-input:hover {
+  border-color: #40a9ff;
+}
+
+.form-input:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 文本域样式 */
+.form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+  transition: all 0.2s ease;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-textarea::placeholder {
+  color: #999;
+}
+
+.form-textarea:hover {
+  border-color: #40a9ff;
+}
+
+.form-textarea:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 字符计数 */
+.input-count {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  font-size: 12px;
+  color: #999;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+/* 选择器样式 - 与主界面保持一致 */
+.select-wrapper {
+  position: relative;
+}
+
+.form-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+  transition: all 0.2s ease;
+  outline: none;
+  min-height: 80px;
+  box-sizing: border-box;
+}
+
+.form-select:hover {
+  border-color: #40a9ff;
+}
+
+.form-select:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.form-select option {
+  padding: 8px 12px;
+  color: #333;
+}
+
+.form-select option:checked {
+  background: #1890ff;
+  color: #fff;
+}
+
+.select-placeholder {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  color: #999;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* 标签页样式 */
+.add-chat-modal .n-tabs {
+  margin: 0;
+}
+
+.add-chat-modal .n-tabs .n-tab-pane {
+  padding: 0;
+}
+
+.add-chat-modal .n-tabs .n-tabs-nav {
+  margin-bottom: 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.add-chat-modal .n-tabs .n-tabs-tab {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  padding: 12px 16px;
+  transition: color 0.2s ease;
+  border: none;
+  background: transparent;
+}
+
+.add-chat-modal .n-tabs .n-tabs-tab:hover {
+  color: #333;
+}
+
+.add-chat-modal .n-tabs .n-tabs-tab--active {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.add-chat-modal .n-tabs .n-tabs-tab-line {
+  background: #1890ff;
+  height: 2px;
 }
 </style>

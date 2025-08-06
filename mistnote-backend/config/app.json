@@ -1,0 +1,16 @@
+{
+  "userIdLength": 5,
+  "userIdMinValue": 10000,
+  "userIdMaxValue": 99999,
+  "allowCustomUserId": false,
+  "dataDirectory": "./user_data",
+  "database": {
+    "type": "sqlite",
+    "filename": "user.db"
+  },
+  "storage": {
+    "picturesFolder": "pic",
+    "documentsFolder": "docs",
+    "avatarsFolder": "avatars"
+  }
+}

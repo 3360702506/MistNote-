@@ -16,6 +16,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const chatRoutes = require('./routes/chat');
 const contactRoutes = require('./routes/contact');
+const friendRoutes = require('./routes/friends');
 const uploadRoutes = require('./routes/upload');
 
 const app = express();
@@ -55,6 +56,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/contacts', contactRoutes);
+app.use('/api/friends', friendRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // 健康检查

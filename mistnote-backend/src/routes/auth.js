@@ -9,14 +9,23 @@ const router = express.Router();
 
 // 注册验证规则
 const registerSchema = Joi.object({
-  username: Joi.string().alphanum().min(3).max(20).required(),
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required()
+  userId: Joi.string().pattern(/^\d{5}$/).required().messages({
+    'string.pattern.base': 'ID必须是5位数字'
+  }),
+  displayName: Joi.string().min(1).max(30).required().messages({
+    'string.min': '显示名称不能为空',
+    'string.max': '显示名称不能超过30个字符'
+  }),
+  password: Joi.string().min(6).required().messages({
+    'string.min': '密码长度至少6位'
+  })
 });
 
 // 登录验证规则
 const loginSchema = Joi.object({
-  email: Joi.string().email().required(),
+  userId: Joi.string().pattern(/^\d{5}$/).required().messages({
+    'string.pattern.base': 'ID必须是5位数字'
+  }),
   password: Joi.string().required()
 });
 
@@ -32,27 +41,24 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    const { username, email, password } = value;
+    const { userId, displayName, password } = value;
 
-    // 检查用户是否已存在
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }]
-    });
+    // 检查用户ID是否已存在
+    const existingUser = await User.findOne({ userId });
 
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: existingUser.email === email ? '邮箱已被注册' : '用户名已被使用'
+        message: 'ID已存在'
       });
     }
 
     // 创建新用户
     const user = new User({
-      username,
-      email,
+      userId,
       password,
       profile: {
-        nickname: username
+        displayName
       }
     });
 
@@ -62,7 +68,7 @@ router.post('/register', async (req, res) => {
     const token = generateToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
 
-    logger.info(`用户注册成功: ${username} (${email})`);
+    logger.info(`用户注册成功: ${displayName} (ID: ${userId})`);
 
     res.status(201).json({
       success: true,
@@ -85,32 +91,41 @@ router.post('/register', async (req, res) => {
 // 用户登录
 router.post('/login', async (req, res) => {
   try {
+    console.log('登录请求数据:', req.body);
+    
     // 验证输入数据
     const { error, value } = loginSchema.validate(req.body);
     if (error) {
+      console.log('登录数据验证失败:', error.details[0].message);
       return res.status(400).json({
         success: false,
         message: error.details[0].message
       });
     }
 
-    const { email, password } = value;
+    const { userId, password } = value;
+    console.log('验证后的数据:', { userId, password: '***' });
 
     // 查找用户
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ userId });
+    console.log('查找用户结果:', user ? `找到用户: ${user.profile.displayName}` : '未找到用户');
+    
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: '邮箱或密码错误'
+        message: 'ID或密码错误'
       });
     }
 
     // 验证密码
+    console.log('开始验证密码...');
     const isPasswordValid = await user.comparePassword(password);
+    console.log('密码验证结果:', isPasswordValid);
+    
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: '邮箱或密码错误'
+        message: 'ID或密码错误'
       });
     }
 
@@ -122,7 +137,7 @@ router.post('/login', async (req, res) => {
     user.lastSeen = new Date();
     await user.save();
 
-    logger.info(`用户登录成功: ${user.username} (${email})`);
+    logger.info(`用户登录成功: ${user.profile.displayName} (ID: ${user.userId})`);
 
     res.json({
       success: true,

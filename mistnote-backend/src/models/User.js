@@ -3,18 +3,24 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   // 基本信息
-  username: {
+  userId: {
     type: String,
     required: true,
     unique: true,
+    trim: true,
+    length: 5,
+    match: /^\d{5}$/  // 只允许5位数字
+  },
+  username: {
+    type: String,
+    required: false,
     trim: true,
     minlength: 3,
     maxlength: 20
   },
   email: {
     type: String,
-    required: true,
-    unique: true,
+    required: false,
     lowercase: true,
     trim: true
   },
@@ -26,9 +32,10 @@ const userSchema = new mongoose.Schema({
   
   // 个人资料
   profile: {
-    nickname: {
+    displayName: {
       type: String,
-      default: '',
+      required: true,
+      trim: true,
       maxlength: 30
     },
     avatar: {
@@ -177,9 +184,10 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 userSchema.methods.getPublicProfile = function() {
   return {
     _id: this._id,
+    userId: this.userId,
     username: this.username,
     profile: {
-      nickname: this.profile.nickname || this.username,
+      displayName: this.profile.displayName,
       avatar: this.profile.avatar,
       signature: this.profile.signature,
       gender: this.profile.gender,

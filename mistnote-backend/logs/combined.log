@@ -1,0 +1,165 @@
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-06 11:28:46"}
+{"level":"info","message":"MongoDB连接成功: localhost","service":"mistnote-backend","timestamp":"2025-08-06 11:28:46"}
+{"level":"info","message":"用户注册成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:31:44"}
+{"level":"info","message":"用户连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:31:44"}
+{"level":"info","message":"用户断开连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:32:32"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:33:41"}
+{"level":"info","message":"用户连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:33:41"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:34:54"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:35:14"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:35:16"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:35:17"}
+{"level":"info","message":"用户断开连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:36:09"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:36:29"}
+{"level":"info","message":"用户连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:36:29"}
+{"level":"info","message":"用户断开连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:37:52"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:38:07"}
+{"level":"info","message":"用户连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:38:07"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:39:09"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:39:10"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:39:16"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:39:17"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:39:18"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:39:51"}
+{"level":"info","message":"用户断开连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:43:34"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:56:01"}
+{"level":"info","message":"用户连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:56:01"}
+{"level":"info","message":"用户断开连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:56:43"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 11:57:00"}
+{"level":"info","message":"用户连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 11:57:00"}
+{"level":"info","message":"用户断开连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 13:35:37"}
+{"level":"info","message":"用户登录成功: aaa (aaa@qq.com)","service":"mistnote-backend","timestamp":"2025-08-06 13:35:56"}
+{"level":"info","message":"用户连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 13:35:56"}
+{"level":"info","message":"用户断开连接: aaa (6892cc9f2e6494b50461defa)","service":"mistnote-backend","timestamp":"2025-08-06 13:36:02"}
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-06 14:27:40"}
+{"level":"info","message":"MongoDB连接成功: localhost","service":"mistnote-backend","timestamp":"2025-08-06 14:27:40"}
+{"level":"info","message":"用户注册成功: aaaa (ID: 13452)","service":"mistnote-backend","timestamp":"2025-08-06 14:27:43"}
+{"level":"info","message":"用户连接: undefined (6892f5de28ca8641d7db94fc)","service":"mistnote-backend","timestamp":"2025-08-06 14:27:43"}
+{"level":"info","message":"用户登录成功: aaaa (ID: 13452)","service":"mistnote-backend","timestamp":"2025-08-06 14:27:44"}
+{"level":"info","message":"用户断开连接: undefined (6892f5de28ca8641d7db94fc)","service":"mistnote-backend","timestamp":"2025-08-06 14:27:44"}
+{"code":11000,"index":0,"keyPattern":{"username":1},"keyValue":{"username":null},"level":"error","message":"用户注册失败: E11000 duplicate key error collection: mistnote.users index: username_1 dup key: { username: null }","service":"mistnote-backend","stack":"MongoServerError: E11000 duplicate key error collection: mistnote.users index: username_1 dup key: { username: null }\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongodb/lib/operations/insert.js:50:33\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongodb/lib/operations/command.js:84:64\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-08-06 14:49:16"}
+{"code":11000,"index":0,"keyPattern":{"username":1},"keyValue":{"username":null},"level":"error","message":"用户注册失败: E11000 duplicate key error collection: mistnote.users index: username_1 dup key: { username: null }","service":"mistnote-backend","stack":"MongoServerError: E11000 duplicate key error collection: mistnote.users index: username_1 dup key: { username: null }\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongodb/lib/operations/insert.js:50:33\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongodb/lib/operations/command.js:84:64\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-08-06 14:49:18"}
+{"code":11000,"index":0,"keyPattern":{"username":1},"keyValue":{"username":null},"level":"error","message":"用户注册失败: E11000 duplicate key error collection: mistnote.users index: username_1 dup key: { username: null }","service":"mistnote-backend","stack":"MongoServerError: E11000 duplicate key error collection: mistnote.users index: username_1 dup key: { username: null }\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongodb/lib/operations/insert.js:50:33\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongodb/lib/operations/command.js:84:64\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-08-06 14:49:23"}
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-06 14:57:21"}
+{"level":"info","message":"MongoDB连接成功: localhost","service":"mistnote-backend","timestamp":"2025-08-06 14:57:21"}
+{"code":11000,"index":0,"keyPattern":{"username":1},"keyValue":{"username":null},"level":"error","message":"用户注册失败: E11000 duplicate key error collection: mistnote.users index: username_1 dup key: { username: null }","service":"mistnote-backend","stack":"MongoServerError: E11000 duplicate key error collection: mistnote.users index: username_1 dup key: { username: null }\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongodb/lib/operations/insert.js:50:33\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongodb/lib/operations/command.js:84:64\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-08-06 14:57:24"}
+{"code":11000,"index":0,"keyPattern":{"username":1},"keyValue":{"username":null},"level":"error","message":"用户注册失败: E11000 duplicate key error collection: mistnote.users index: username_1 dup key: { username: null }","service":"mistnote-backend","stack":"MongoServerError: E11000 duplicate key error collection: mistnote.users index: username_1 dup key: { username: null }\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongodb/lib/operations/insert.js:50:33\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongodb/lib/operations/command.js:84:64\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-08-06 14:57:29"}
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-06 14:59:16"}
+{"level":"info","message":"MongoDB连接成功: localhost","service":"mistnote-backend","timestamp":"2025-08-06 14:59:16"}
+{"level":"info","message":"用户注册成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 14:59:27"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 14:59:28"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 14:59:29"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 14:59:29"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 15:12:53"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:12:53"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:12:54"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 15:13:31"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:13:31"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:13:32"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 15:15:09"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:15:09"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:15:09"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 15:20:34"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:20:34"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:20:34"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 15:23:38"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 15:27:34"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:27:34"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:27:34"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 15:28:02"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:28:02"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 15:28:02"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 16:35:16"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:35:16"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:35:16"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 16:38:40"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:38:40"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:38:40"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 16:39:22"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:39:22"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:39:22"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 16:49:15"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:49:15"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:49:15"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 16:49:37"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:49:37"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:49:37"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 16:50:42"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:50:42"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:50:42"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 16:53:56"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:53:56"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:53:56"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 16:54:32"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:54:32"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:54:32"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 16:59:16"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:59:16"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:59:16"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:59:17"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:59:18"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:59:19"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:59:19"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:59:19"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 16:59:19"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:34"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:34"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:34"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:34"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:38"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:41"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:56"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:56"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:56"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:57"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:00:57"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:02:24"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:02:24"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 17:02:42"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:02:42"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:02:42"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:02:42"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:02:42"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:03:30"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:03:30"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 17:06:05"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:06:05"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:06:05"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:06:06"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:06:06"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:06:35"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:06:35"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 17:07:32"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:07:32"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:07:32"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:07:33"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:07:33"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:07:51"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:07:52"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 17:08:01"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:08:01"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:08:01"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:08:02"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:08:02"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:11:40"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:11:40"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:11:40"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:11:40"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:12:28"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:12:28"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:12:28"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:12:28"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:12:44"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:12:44"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 17:13:52"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:13:52"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:13:52"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:13:53"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:13:53"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:21:23"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:21:30"}
+{"level":"info","message":"用户登录成功: aaaaaaaaa (ID: 49205)","service":"mistnote-backend","timestamp":"2025-08-06 17:21:39"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:21:39"}
+{"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:21:39"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:21:40"}
+{"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:21:40"}

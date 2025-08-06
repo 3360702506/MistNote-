@@ -35,7 +35,7 @@ const socketHandler = (io) => {
     const userId = socket.userId;
     const user = socket.user;
     
-    logger.info(`用户连接: ${user.username} (${userId})`);
+    logger.info(`用户连接: ${user.profile?.displayName || user.username || '未知用户'} (用户ID: ${user.userId})`);
     
     // 添加到在线用户列表
     onlineUsers.set(userId, {
@@ -190,7 +190,7 @@ const socketHandler = (io) => {
 
     // 处理断开连接
     socket.on('disconnect', async () => {
-      logger.info(`用户断开连接: ${user.username} (${userId})`);
+      logger.info(`用户断开连接: ${user.profile?.displayName || user.username || '未知用户'} (用户ID: ${user.userId})`);
       
       // 从在线用户列表移除
       onlineUsers.delete(userId);
