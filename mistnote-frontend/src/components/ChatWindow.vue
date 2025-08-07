@@ -336,8 +336,8 @@ watch(() => props.contactId, async (newContactId, oldContactId) => {
  * 处理收到新消息
  */
 const handleNewMessage = ({ message, conversationId }) => {
-  // 检查是否是当前会话的消息 - 使用userId而不是_id
-  const currentUserId = userStore.user?.userId || userStore.user?._id
+  // 检查是否是当前会话的消息 - 使用数字userId
+  const currentUserId = userStore.userLoginId || userStore.user?.userId
   const currentConversationId = generateConversationId(currentUserId, props.contactId)
   console.log('收到新消息事件:', { conversationId, currentConversationId, currentUserId, contactId: props.contactId, message })
   
@@ -388,8 +388,8 @@ const handleNewMessage = ({ message, conversationId }) => {
  * 处理消息发送中
  */
 const handleMessageSending = ({ message, conversationId }) => {
-  // 检查是否是当前会话的消息 - 使用userId而不是_id
-  const currentUserId = userStore.user?.userId || userStore.user?._id
+  // 检查是否是当前会话的消息 - 使用数字userId
+  const currentUserId = userStore.userLoginId || userStore.user?.userId
   const currentConversationId = generateConversationId(currentUserId, props.contactId)
   console.log('消息发送中:', { conversationId, currentConversationId, message })
   if (conversationId === currentConversationId) {
@@ -415,8 +415,8 @@ const handleMessageSending = ({ message, conversationId }) => {
  * 处理消息发送成功
  */
 const handleMessageSent = ({ messageId, conversationId }) => {
-  // 检查是否是当前会话的消息 - 使用userId而不是_id
-  const currentUserId = userStore.user?.userId || userStore.user?._id
+  // 检查是否是当前会话的消息 - 使用数字userId
+  const currentUserId = userStore.userLoginId || userStore.user?.userId
   const currentConversationId = generateConversationId(currentUserId, props.contactId)
   console.log('消息发送成功:', { conversationId, currentConversationId, messageId })
   if (conversationId === currentConversationId) {
@@ -435,8 +435,8 @@ const handleMessageSent = ({ messageId, conversationId }) => {
  * 处理消息已读
  */
 const handleMessagesRead = ({ messageIds, conversationId }) => {
-  // 检查是否是当前会话的消息 - 使用userId而不是_id
-  const currentUserId = userStore.user?.userId || userStore.user?._id
+  // 检查是否是当前会话的消息 - 使用数字userId
+  const currentUserId = userStore.userLoginId || userStore.user?.userId
   const currentConversationId = generateConversationId(currentUserId, props.contactId)
   console.log('消息已读:', { conversationId, currentConversationId, messageIds })
   if (conversationId === currentConversationId) {
@@ -514,10 +514,38 @@ const markMessagesAsRead = async () => {
 
 /**
  * 生成会话ID
+ * 统一使用数字userId，确保与后端一致
  */
 const generateConversationId = (userId1, userId2) => {
-  const ids = [userId1, userId2].sort()
-  return `${ids[0]}_${ids[1]}`
+  // 确保使用数字userId而不是ObjectId
+  const normalizeUserId = (id) => {
+    if (!id) return null
+    // 如果是数字字符串或数字，直接返回
+    if (/^\d+$/.test(id.toString())) {
+      return id.toString()
+    }
+    // 如果是ObjectId格式，尝试从userStore获取对应的userId
+    if (typeof id === 'string' && id.length === 24) {
+      // 这里应该通过某种方式获取对应的数字userId
+      // 暂时返回原值，但需要后续优化
+      console.warn('检测到ObjectId格式的用户ID，可能导致会话ID不匹配:', id)
+      return id
+    }
+    return id.toString()
+  }
+  
+  const normalizedId1 = normalizeUserId(userId1)
+  const normalizedId2 = normalizeUserId(userId2)
+  
+  if (!normalizedId1 || !normalizedId2) {
+    console.error('生成会话ID失败：用户ID无效', { userId1, userId2, normalizedId1, normalizedId2 })
+    return null
+  }
+  
+  const ids = [normalizedId1, normalizedId2].sort()
+  const conversationId = `${ids[0]}_${ids[1]}`
+  console.log('生成会话ID:', { userId1, userId2, normalizedId1, normalizedId2, conversationId })
+  return conversationId
 }
 
 // 格式化时间
@@ -594,8 +622,8 @@ const startInputResize = (e) => {
  * 处理消息发送失败
  */
 const handleMessageFailed = ({ message, conversationId, error }) => {
-  // 检查是否是当前会话的消息 - 使用userId而不是_id
-  const currentUserId = userStore.user?.userId || userStore.user?._id
+  // 检查是否是当前会话的消息 - 使用数字userId
+  const currentUserId = userStore.userLoginId || userStore.user?.userId
   const currentConversationId = generateConversationId(currentUserId, props.contactId)
   console.log('消息发送失败:', { conversationId, currentConversationId, message, error })
   if (conversationId === currentConversationId) {

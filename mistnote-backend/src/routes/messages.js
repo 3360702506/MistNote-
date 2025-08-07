@@ -47,6 +47,14 @@ router.post('/send', auth, async (req, res) => {
     // 填充发送者信息
     await message.populate('sender', 'userId username profile');
     
+    // 生成会话ID（使用数字userId确保与前端一致）
+    const generateConversationId = (userId1, userId2) => {
+      const ids = [userId1.toString(), userId2.toString()].sort();
+      return `${ids[0]}_${ids[1]}`;
+    };
+    
+    const conversationId = generateConversationId(req.user.userId, receiver.userId);
+    
     // 实时推送消息给接收者
     const io = req.app.get('io');
     if (io) {
@@ -57,16 +65,20 @@ router.post('/send', auth, async (req, res) => {
         senderName: req.user.profile?.displayName || req.user.username,
         senderAvatar: req.user.profile?.avatar || '/uploads/avatars/default.png',
         receiverId: receiver._id,
+        receiverUserId: receiver.userId,
+        receiverName: receiver.profile?.displayName || receiver.username,
+        receiverAvatar: receiver.profile?.avatar || '/uploads/avatars/default.png',
         content: message.content,
         messageType: message.messageType,
         timestamp: message.createdAt,
-        conversationId: `${Math.min(req.user._id.toString(), receiver._id.toString())}_${Math.max(req.user._id.toString(), receiver._id.toString())}`
+        conversationId: conversationId
       });
       
       // 同时推送给发送者（用于多端同步）
       io.to(`user_${req.user._id}`).emit('message_sent', {
         messageId: message._id,
         senderId: req.user._id,
+        senderUserId: req.user.userId,
         receiverId: receiver._id,
         receiverUserId: receiver.userId,
         receiverName: receiver.profile?.displayName || receiver.username,
@@ -74,7 +86,7 @@ router.post('/send', auth, async (req, res) => {
         content: message.content,
         messageType: message.messageType,
         timestamp: message.createdAt,
-        conversationId: `${Math.min(req.user._id.toString(), receiver._id.toString())}_${Math.max(req.user._id.toString(), receiver._id.toString())}`
+        conversationId: conversationId
       });
     }
     
@@ -83,11 +95,13 @@ router.post('/send', auth, async (req, res) => {
       data: {
         messageId: message._id,
         senderId: req.user._id,
+        senderUserId: req.user.userId,
         receiverId: receiver._id,
+        receiverUserId: receiver.userId,
         content: message.content,
         messageType: message.messageType,
         timestamp: message.createdAt,
-        conversationId: `${Math.min(req.user._id.toString(), receiver._id.toString())}_${Math.max(req.user._id.toString(), receiver._id.toString())}`
+        conversationId: conversationId
       }
     });
   } catch (error) {

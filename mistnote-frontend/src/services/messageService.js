@@ -527,19 +527,39 @@ class MessageService {
 
   /**
    * 生成会话ID
+   * @param {string} userId1 - 用户ID1
+   * @param {string} userId2 - 用户ID2
+   * @returns {string} 会话ID
    * @private
    */
   generateConversationId(userId1, userId2) {
-    // 验证用户ID有效性
-    if (!userId1 || !userId2) {
-      console.error('生成会话ID失败：用户ID无效', { userId1, userId2 })
+    // 确保使用数字userId而不是ObjectId
+    const normalizeUserId = (id) => {
+      if (!id) return null
+      // 如果是数字字符串或数字，直接返回
+      if (/^\d+$/.test(id.toString())) {
+        return id.toString()
+      }
+      // 如果是ObjectId格式，警告并返回原值
+      if (typeof id === 'string' && id.length === 24) {
+        console.warn('检测到ObjectId格式的用户ID，可能导致会话ID不匹配:', id)
+        return id
+      }
+      return id.toString()
+    }
+    
+    const normalizedId1 = normalizeUserId(userId1)
+    const normalizedId2 = normalizeUserId(userId2)
+    
+    if (!normalizedId1 || !normalizedId2) {
+      console.error('生成会话ID失败：用户ID无效', { userId1, userId2, normalizedId1, normalizedId2 })
       return null
     }
     
     // 确保会话ID的一致性
-    const ids = [userId1.toString(), userId2.toString()].sort()
+    const ids = [normalizedId1, normalizedId2].sort()
     const conversationId = `${ids[0]}_${ids[1]}`
-    console.log('生成会话ID:', { userId1, userId2, conversationId })
+    console.log('生成会话ID:', { userId1, userId2, normalizedId1, normalizedId2, conversationId })
     return conversationId
   }
 
