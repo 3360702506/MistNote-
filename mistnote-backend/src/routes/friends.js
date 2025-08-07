@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const FriendRequest = require('../models/FriendRequest');
+const Message = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
@@ -76,7 +77,7 @@ router.post('/request', authenticateToken, async (req, res) => {
     }
 
     // 检查是否已经是好友
-    const currentUser = await User.findById(req.user.userId);
+    const currentUser = await User.findById(req.user._id);
     const isAlreadyFriend = currentUser.contacts.some(
       contact => contact.user.toString() === targetUser._id.toString()
     );
@@ -91,8 +92,8 @@ router.post('/request', authenticateToken, async (req, res) => {
     // 检查是否已有待处理的好友请求
     const existingRequest = await FriendRequest.findOne({
       $or: [
-        { sender: req.user.userId, receiver: targetUser._id, status: 'pending' },
-        { sender: targetUser._id, receiver: req.user.userId, status: 'pending' }
+        { sender: req.user._id, receiver: targetUser._id, status: 'pending' },
+        { sender: targetUser._id, receiver: req.user._id, status: 'pending' }
       ]
     });
 
@@ -105,17 +106,38 @@ router.post('/request', authenticateToken, async (req, res) => {
 
     // 创建好友请求记录
     const friendRequest = new FriendRequest({
-      sender: req.user.userId,
+      sender: req.user._id,
       receiver: targetUser._id,
       message: message || ''
     });
     await friendRequest.save();
 
+    // 实时通知目标用户收到好友请求
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${targetUser._id}`).emit('friendRequestReceived', {
+        requestId: friendRequest._id,
+        sender: {
+          _id: req.user._id,
+          userId: req.user.userId,
+          profile: {
+            displayName: req.user.profile?.displayName || req.user.username,
+            avatar: req.user.profile?.avatar
+          }
+        },
+        message: friendRequest.message,
+        createdAt: friendRequest.createdAt
+      });
+    }
+
     logger.info(`好友请求发送: ${req.user.userId} -> ${targetUserId}`);
 
     res.json({
       success: true,
-      message: '好友请求已发送'
+      message: '好友请求已发送',
+      data: {
+        requestId: friendRequest._id
+      }
     });
   } catch (error) {
     logger.error('发送好友请求失败:', error);
@@ -131,7 +153,7 @@ router.get('/requests', authenticateToken, async (req, res) => {
   try {
     // 获取收到的好友请求
     const receivedRequests = await FriendRequest.find({
-      receiver: req.user.userId,
+      receiver: req.user._id,
       status: 'pending'
     })
     .populate('sender', 'userId profile.displayName profile.avatar')
@@ -139,7 +161,7 @@ router.get('/requests', authenticateToken, async (req, res) => {
 
     // 获取发送的好友请求
     const sentRequests = await FriendRequest.find({
-      sender: req.user.userId,
+      sender: req.user._id,
       status: 'pending'
     })
     .populate('receiver', 'userId profile.displayName profile.avatar')
@@ -167,6 +189,8 @@ router.post('/requests/:requestId', authenticateToken, async (req, res) => {
     const { requestId } = req.params;
     const { action } = req.body; // 'accept' 或 'reject'
     
+
+    
     if (!['accept', 'reject'].includes(action)) {
       return res.status(400).json({
         success: false,
@@ -185,8 +209,10 @@ router.post('/requests/:requestId', authenticateToken, async (req, res) => {
       });
     }
     
+
+    
     // 验证请求接收者是当前用户
-    if (friendRequest.receiver.toString() !== req.user.userId) {
+    if (friendRequest.receiver.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: '无权处理此好友请求'
@@ -209,7 +235,7 @@ router.post('/requests/:requestId', authenticateToken, async (req, res) => {
     // 如果接受请求，添加到双方的联系人列表
     if (action === 'accept') {
       const [currentUser, senderUser] = await Promise.all([
-        User.findById(req.user.userId),
+        User.findById(req.user._id),
         User.findById(friendRequest.sender._id)
       ]);
       
@@ -221,11 +247,71 @@ router.post('/requests/:requestId', authenticateToken, async (req, res) => {
       
       // 添加到发送者的联系人列表
       senderUser.contacts.push({
-        user: req.user.userId,
+        user: req.user._id,
         addedAt: new Date()
       });
       
       await Promise.all([currentUser.save(), senderUser.save()]);
+
+      // 创建系统欢迎消息（使用当前用户作为sender）
+      const welcomeMessage = new Message({
+        sender: req.user._id, // 使用当前用户作为发送者
+        receiver: friendRequest.sender._id,
+        receiverType: 'User',
+        content: `我们已经成为好友了，快来聊天吧~`,
+        messageType: 'text', // 使用text类型而不是system
+        createdAt: new Date()
+      });
+      await welcomeMessage.save();
+
+      // 实时通知双方好友请求被接受
+      const io = req.app.get('io');
+      if (io) {
+        // 通知请求发送者
+        io.to(`user_${friendRequest.sender._id}`).emit('friendRequestAccepted', {
+          requestId: friendRequest._id,
+          friend: {
+            _id: currentUser._id,
+            userId: currentUser.userId,
+            profile: {
+              displayName: currentUser.profile?.displayName || currentUser.username,
+              avatar: currentUser.profile?.avatar
+            }
+          },
+          welcomeMessage: {
+            _id: welcomeMessage._id,
+            content: welcomeMessage.content,
+            createdAt: welcomeMessage.createdAt
+          }
+        });
+
+        // 通知当前用户（接受者）
+        io.to(`user_${req.user._id}`).emit('friendAdded', {
+          friend: {
+            _id: senderUser._id,
+            userId: senderUser.userId,
+            profile: {
+              displayName: senderUser.profile?.displayName || senderUser.username,
+              avatar: senderUser.profile?.avatar
+            }
+          }
+        });
+      }
+    } else {
+      // 如果拒绝请求，通知发送者
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`user_${friendRequest.sender._id}`).emit('friendRequestRejected', {
+          requestId: friendRequest._id,
+          rejectedBy: {
+            _id: req.user._id,
+            userId: req.user.userId,
+            profile: {
+              displayName: req.user.profile?.displayName || req.user.username
+            }
+          }
+        });
+      }
     }
 
     logger.info(`好友请求${action === 'accept' ? '接受' : '拒绝'}: ${req.user.userId} <- ${friendRequest.sender._id}`);

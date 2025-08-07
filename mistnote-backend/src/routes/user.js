@@ -250,4 +250,51 @@ router.post('/:userId/like', authenticateToken, async (req, res) => {
   }
 });
 
+// 根据用户ID搜索用户
+router.get('/search/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // 验证用户ID格式
+    if (!/^\d{5}$/.test(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: '用户ID格式不正确，应为5位数字'
+      });
+    }
+    
+    // 查找用户
+    const user = await User.findOne({ userId })
+      .select('userId username profile.displayName profile.avatar profile.bio isOnline lastSeen');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: '用户不存在'
+      });
+    }
+    
+    // 返回用户公开信息
+    res.json({
+      success: true,
+      data: {
+        _id: user._id,
+        userId: user.userId,
+        username: user.username,
+        displayName: user.profile?.displayName || user.username,
+        avatar: user.profile?.avatar,
+        bio: user.profile?.bio,
+        isOnline: user.isOnline,
+        lastSeen: user.lastSeen
+      }
+    });
+  } catch (error) {
+    logger.error('搜索用户失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '搜索用户失败'
+    });
+  }
+});
+
 module.exports = router;

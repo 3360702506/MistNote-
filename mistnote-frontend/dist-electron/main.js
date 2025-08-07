@@ -1026,10 +1026,6 @@ process.env.DIST = path$1.join(process.env.ROOT, "dist");
 process.env.VITE_PUBLIC = process.env.VITE_DEV_SERVER_URL ? path$1.join(process.env.ROOT, "public") : process.env.DIST;
 if (process.platform === "win32") app.disableHardwareAcceleration();
 if (process.platform === "win32") app.setAppUserModelId(app.getName());
-if (!app.requestSingleInstanceLock()) {
-  app.quit();
-  process.exit(0);
-}
 let loginWin = null;
 let mainWin = null;
 const preload = process.env.VITE_DEV_SERVER_URL ? path$1.join(__dirname, "preload.js") : path$1.join(__dirname, "preload.js");

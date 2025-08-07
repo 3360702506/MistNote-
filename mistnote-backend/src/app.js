@@ -68,6 +68,9 @@ app.get('/health', (req, res) => {
   });
 });
 
+// 将Socket.IO实例添加到app中，供路由使用
+app.set('io', io);
+
 // Socket.IO处理
 socketHandler(io);
 

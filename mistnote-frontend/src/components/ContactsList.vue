@@ -120,18 +120,34 @@
       class="resize-handle"
       @mousedown="startResize"
     ></div>
+    
+    <!-- 添加好友对话框 -->
+    <AddFriendDialog 
+      :show="showAddFriendDialog"
+      @update:show="showAddFriendDialog = $event"
+      @friend-request-sent="handleFriendRequestSent"
+    />
+    
+    <!-- 好友请求列表对话框 -->
+    <n-modal :show="showFriendRequestList" @update:show="showFriendRequestList = $event" preset="card" title="好友通知" style="width: 500px;">
+      <FriendRequestList 
+        @friend-added="handleFriendAdded"
+      />
+    </n-modal>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { NIcon } from 'naive-ui'
+import { NIcon, NModal } from 'naive-ui'
 import {
   Search as SearchIcon,
   Add as AddIcon,
   People as PeopleIcon,
   ChevronForward as ChevronForwardIcon
 } from '@vicons/ionicons5'
+import AddFriendDialog from './AddFriendDialog.vue'
+import FriendRequestList from './FriendRequestList.vue'
 
 const searchQuery = ref('')
 const activeContactId = ref(null)
@@ -261,9 +277,13 @@ const setActiveTab = (tab) => {
   activeTab.value = tab
 }
 
+// 对话框状态
+const showAddFriendDialog = ref(false);
+const showFriendRequestList = ref(false);
+
 // 功能方法
 const addContact = () => {
-  console.log('添加联系人')
+  showAddFriendDialog.value = true;
 }
 
 const openFriendManager = () => {
@@ -271,11 +291,22 @@ const openFriendManager = () => {
 }
 
 const openFriendNotifications = () => {
-  console.log('打开好友通知')
+  showFriendRequestList.value = true;
 }
 
 const openGroupNotifications = () => {
   console.log('打开群通知')
+}
+
+// 处理好友请求发送成功
+const handleFriendRequestSent = (data) => {
+  console.log('好友请求已发送:', data);
+}
+
+// 处理好友添加成功
+const handleFriendAdded = (friend) => {
+  console.log('新好友添加:', friend);
+  // 这里可以刷新好友列表或添加到现有列表
 }
 
 // 拖拽调整宽度

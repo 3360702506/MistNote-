@@ -28,10 +28,10 @@ if (process.platform === 'win32') app.disableHardwareAcceleration()
 // Set application name for Windows 10+ notifications
 if (process.platform === 'win32') app.setAppUserModelId(app.getName())
 
-if (!app.requestSingleInstanceLock()) {
-  app.quit()
-  process.exit(0)
-}
+// if (!app.requestSingleInstanceLock()) {
+//   app.quit()
+//   process.exit(0)
+// }
 
 let loginWin = null
 let mainWin = null

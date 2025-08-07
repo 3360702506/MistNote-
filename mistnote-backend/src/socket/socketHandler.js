@@ -47,8 +47,9 @@ const socketHandler = (io) => {
     // 更新用户在线状态
     await user.updateOnlineStatus('online', '在线');
     
-    // 加入个人房间
-    socket.join(userId);
+    // 加入个人房间（使用用户ID作为房间名）
+    socket.join(`user_${userId}`);
+    socket.join(userId); // 保持兼容性
     
     // 通知联系人用户上线
     const contacts = user.contacts.map(contact => contact.user.toString());

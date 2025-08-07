@@ -163,3 +163,55 @@
 {"level":"info","message":"用户断开连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:21:39"}
 {"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:21:40"}
 {"level":"info","message":"用户连接: undefined (6892fd4fc2d5444c73bd6a66)","service":"mistnote-backend","timestamp":"2025-08-06 17:21:40"}
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-07 11:07:28"}
+{"level":"error","message":"用户登录失败: Operation `users.findOne()` buffering timed out after 10000ms","service":"mistnote-backend","stack":"MongooseError: Operation `users.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:185:23)\n    at listOnTimeout (node:internal/timers:573:17)\n    at process.processTimers (node:internal/timers:514:7)","timestamp":"2025-08-07 11:07:45"}
+{"level":"error","message":"用户登录失败: Operation `users.findOne()` buffering timed out after 10000ms","service":"mistnote-backend","stack":"MongooseError: Operation `users.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:185:23)\n    at listOnTimeout (node:internal/timers:573:17)\n    at process.processTimers (node:internal/timers:514:7)","timestamp":"2025-08-07 11:07:45"}
+{"level":"error","message":"MongoDB连接失败: connect ECONNREFUSED 127.0.0.1:27017","reason":{"commonWireVersion":0,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"logicalSessionTimeoutMinutes":null,"maxElectionId":null,"maxSetVersion":null,"servers":{},"setName":null,"stale":false,"type":"Unknown"},"service":"mistnote-backend","stack":"MongooseServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017\n    at _handleConnectionErrors (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/connection.js:816:11)\n    at NativeConnection.openUri (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/connection.js:791:11)\n    at async connectDB (/mnt/d/MistNote/mistnote-backend/src/config/database.js:6:18)","timestamp":"2025-08-07 11:08:01"}
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-07 11:08:30"}
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-07 11:11:33"}
+{"level":"error","message":"MongoDB连接失败: connect ECONNREFUSED 127.0.0.1:27017","reason":{"commonWireVersion":0,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"logicalSessionTimeoutMinutes":null,"maxElectionId":null,"maxSetVersion":null,"servers":{},"setName":null,"stale":false,"type":"Unknown"},"service":"mistnote-backend","stack":"MongooseServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017\n    at _handleConnectionErrors (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/connection.js:816:11)\n    at NativeConnection.openUri (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/connection.js:791:11)\n    at async connectDB (/mnt/d/MistNote/mistnote-backend/src/config/database.js:6:18)","timestamp":"2025-08-07 11:12:06"}
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-07 11:16:54"}
+{"level":"info","message":"MongoDB连接成功: localhost","service":"mistnote-backend","timestamp":"2025-08-07 11:16:54"}
+{"level":"info","message":"用户注册成功: aaa (ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:11"}
+{"level":"info","message":"用户注册成功: bbb (ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:11"}
+{"level":"info","message":"用户连接: aaa (用户ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:11"}
+{"level":"info","message":"用户连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:11"}
+{"level":"info","message":"用户登录成功: aaa (ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:12"}
+{"level":"info","message":"用户登录成功: bbb (ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:13"}
+{"level":"info","message":"用户断开连接: aaa (用户ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:13"}
+{"level":"info","message":"用户断开连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:13"}
+{"level":"info","message":"用户连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:14"}
+{"level":"info","message":"用户连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:14"}
+{"level":"info","message":"用户连接: aaa (用户ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:14"}
+{"level":"info","message":"用户连接: aaa (用户ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:17:15"}
+{"kind":"ObjectId","level":"error","message":"发送好友请求失败: Cast to ObjectId failed for value \"28723\" (type string) at path \"_id\" for model \"User\"","path":"_id","reason":{},"service":"mistnote-backend","stack":"CastError: Cast to ObjectId failed for value \"28723\" (type string) at path \"_id\" for model \"User\"\n    at ObjectId.cast (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/schema/objectid.js:250:11)\n    at SchemaType.applySetters (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/schematype.js:1219:12)\n    at SchemaType.castForQuery (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/schematype.js:1633:15)\n    at cast (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/cast.js:389:32)\n    at Query.cast (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/query.js:4927:12)\n    at Query._castConditions (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/query.js:2237:10)\n    at model.Query._findOne (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/query.js:2533:8)\n    at model.Query.exec (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/query.js:4447:28)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async /mnt/d/MistNote/mistnote-backend/src/routes/friends.js:80:25","stringValue":"\"28723\"","timestamp":"2025-08-07 11:17:29","value":"28723","valueType":"string"}
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-07 11:19:14"}
+{"level":"info","message":"MongoDB连接成功: localhost","service":"mistnote-backend","timestamp":"2025-08-07 11:19:14"}
+{"level":"info","message":"用户连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:19:15"}
+{"level":"info","message":"用户连接: aaa (用户ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:19:15"}
+{"level":"info","message":"用户连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:19:15"}
+{"level":"info","message":"用户连接: aaa (用户ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:19:18"}
+{"level":"info","message":"好友请求发送: 28723 -> 50902","service":"mistnote-backend","timestamp":"2025-08-07 11:19:44"}
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-07 11:23:23"}
+{"level":"info","message":"MongoDB连接成功: localhost","service":"mistnote-backend","timestamp":"2025-08-07 11:23:23"}
+{"level":"info","message":"用户连接: aaa (用户ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:23:24"}
+{"level":"info","message":"用户连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:23:25"}
+{"level":"info","message":"用户连接: aaa (用户ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:23:26"}
+{"level":"info","message":"用户连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:23:28"}
+{"_message":"Message validation failed","errors":{"sender":{"kind":"required","message":"Path `sender` is required.","name":"ValidatorError","path":"sender","properties":{"message":"Path `sender` is required.","path":"sender","type":"required","value":null},"value":null}},"level":"error","message":"处理好友请求失败: Message validation failed: sender: Path `sender` is required.","service":"mistnote-backend","stack":"ValidationError: Message validation failed: sender: Path `sender` is required.\n    at Document.invalidate (/mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/document.js:3219:32)\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/document.js:3012:17\n    at /mnt/d/MistNote/mistnote-backend/node_modules/mongoose/lib/schematype.js:1368:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)","timestamp":"2025-08-07 11:24:08"}
+{"level":"info","message":"MistNote后端服务启动成功，端口: 5000","service":"mistnote-backend","timestamp":"2025-08-07 11:25:57"}
+{"level":"info","message":"MongoDB连接成功: localhost","service":"mistnote-backend","timestamp":"2025-08-07 11:25:57"}
+{"level":"info","message":"用户连接: aaa (用户ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:25:57"}
+{"level":"info","message":"用户连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:25:57"}
+{"level":"info","message":"用户连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:25:58"}
+{"level":"info","message":"用户连接: aaa (用户ID: 28723)","service":"mistnote-backend","timestamp":"2025-08-07 11:25:58"}
+{"level":"info","message":"用户断开连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:26:11"}
+{"level":"info","message":"用户断开连接: bbb (用户ID: 50902)","service":"mistnote-backend","timestamp":"2025-08-07 11:26:13"}
+{"level":"info","message":"用户注册成功: ads (ID: 68897)","service":"mistnote-backend","timestamp":"2025-08-07 11:26:27"}
+{"level":"info","message":"用户连接: ads (用户ID: 68897)","service":"mistnote-backend","timestamp":"2025-08-07 11:26:27"}
+{"level":"info","message":"用户登录成功: ads (ID: 68897)","service":"mistnote-backend","timestamp":"2025-08-07 11:26:28"}
+{"level":"info","message":"用户断开连接: ads (用户ID: 68897)","service":"mistnote-backend","timestamp":"2025-08-07 11:26:28"}
+{"level":"info","message":"用户连接: ads (用户ID: 68897)","service":"mistnote-backend","timestamp":"2025-08-07 11:26:29"}
+{"level":"info","message":"用户连接: ads (用户ID: 68897)","service":"mistnote-backend","timestamp":"2025-08-07 11:26:29"}
+{"level":"info","message":"好友请求发送: 68897 -> 28723","service":"mistnote-backend","timestamp":"2025-08-07 11:26:49"}
+{"level":"info","message":"好友请求接受: 28723 <- 68941ce394342873e3a5cdbc","service":"mistnote-backend","timestamp":"2025-08-07 11:26:53"}

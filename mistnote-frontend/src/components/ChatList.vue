@@ -308,102 +308,6 @@ const badgeDragThreshold = 50 // 小红点拖拽消失的阈值距离
 
 // 模拟聊天数据
 const chatList = ref([
-  {
-    id: 1,
-    name: '南山无落梅',
-    avatar: '/logo.png',
-    lastMessage: '[图片]',
-    time: '22:48',
-    unreadCount: 0,
-    online: true,
-    muted: false,
-    deleted: false,
-    deletedAt: null,
-    messageType: 'normal' // normal: 普通消息, muted: 免打扰消息
-  },
-  {
-    id: 2,
-    name: 'Qt欧水圣地',
-    avatar: '/logo.png',
-    lastMessage: '得做产品卖',
-    sender: 'ZZ',
-    time: '23:34',
-    unreadCount: 5,
-    online: true,
-    muted: true,
-    messageType: 'muted'
-  },
-  {
-    id: 3,
-    name: 'Electron',
-    avatar: '/logo.png',
-    lastMessage: '[动画表情]',
-    sender: 'CAT',
-    time: '23:33',
-    unreadCount: 12,
-    online: false,
-    muted: false,
-    messageType: 'normal'
-  },
-  {
-    id: 4,
-    name: 'Electron技术交流群',
-    avatar: '/logo.png',
-    lastMessage: '叫我爱老虎油！！：找真的...',
-    time: '23:32',
-    unreadCount: 2,
-    online: false,
-    muted: false,
-    messageType: 'normal'
-  },
-  {
-    id: 5,
-    name: 'C3编程学习(31)',
-    avatar: '/logo.png',
-    lastMessage: '我买这些原住民的时候...',
-    sender: 'Th',
-    time: '23:32',
-    unreadCount: 3,
-    online: false,
-    muted: false,
-    messageType: 'normal'
-  },
-  {
-    id: 6,
-    name: 'AIGC工具对接',
-    avatar: '/logo.png',
-    lastMessage: '@九你 凝雪墨...',
-    sender: 'Q群管家',
-    time: '23:14',
-    unreadCount: 8,
-    online: false,
-    muted: true,
-    messageType: 'muted'
-  },
-  {
-    id: 7,
-    name: 'C语言C++GO语言...',
-    avatar: '/logo.png',
-    lastMessage: '[图片]',
-    sender: 'SKY交流|SUG',
-    time: '23:13',
-    unreadCount: 15,
-    online: false,
-    muted: true,
-    messageType: 'muted'
-  },
-  {
-    id: 8,
-    name: 'ElaWidgetTool交...',
-    avatar: '/logo.png',
-    lastMessage: '开房店',
-    sender: '山岳两定江(📱68)',
-    time: '23:03',
-    unreadCount: 99,
-    online: false,
-    muted: true,
-    messageType: 'muted'
-  }
 ])
 
 // 过滤聊天列表
@@ -582,11 +486,16 @@ const loadFriends = async () => {
     })
     
     if (response.ok) {
-      const friends = await response.json()
-      friendOptions.value = friends.map(friend => ({
-        label: friend.nickname || friend.displayName || friend.userId,
-        value: friend.userId
-      }))
+      const result = await response.json()
+      if (result.success && Array.isArray(result.data)) {
+        friendOptions.value = result.data.map(friend => ({
+          label: friend.nickname || friend.displayName || friend.userId,
+          value: friend.userId
+        }))
+      } else {
+        console.error('好友列表数据格式错误:', result)
+        friendOptions.value = []
+      }
     }
   } catch (error) {
     console.error('加载好友列表失败:', error)
