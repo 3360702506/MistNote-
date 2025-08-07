@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, Menu, Tray, nativeImage } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -35,6 +35,7 @@ if (process.platform === 'win32') app.setAppUserModelId(app.getName())
 
 let loginWin = null
 let mainWin = null
+let tray = null // 系统托盘
 // 在开发模式下，预加载脚本在源码目录；在生产模式下，在构建目录
 const preload = process.env.VITE_DEV_SERVER_URL
   ? path.join(__dirname, 'preload.js')
@@ -48,9 +49,14 @@ let databaseManager = null
 
 // 创建登录窗口
 async function createLoginWindow() {
+  // 根据环境选择正确的图标路径
+  const iconPath = process.env.VITE_DEV_SERVER_URL 
+    ? path.join(__dirname, '../public/logo.png')
+    : path.join(process.env.DIST, 'logo.png')
+  
   loginWin = new BrowserWindow({
     title: 'MistNote - 登录',
-    icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
+    icon: iconPath,
     width: 400,
     height: 600,
     resizable: false,
@@ -85,6 +91,10 @@ async function createLoginWindow() {
   loginWin.webContents.on('ipc-message', (event, channel) => {
     if (channel === 'login-success') {
       createMainWindow()
+      // 创建系统托盘
+      if (!tray) {
+        createTray()
+      }
       loginWin.close()
     }
   })
@@ -96,9 +106,14 @@ async function createLoginWindow() {
 
 // 创建主应用窗口
 async function createMainWindow() {
+  // 根据环境选择正确的图标路径
+  const iconPath = process.env.VITE_DEV_SERVER_URL 
+    ? path.join(__dirname, '../../public/logo.png')
+    : path.join(process.env.DIST, 'logo.png')
+  
   mainWin = new BrowserWindow({
     title: 'MistNote',
-    icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
+    icon: iconPath,
     width: 1200,
     height: 800,
     minWidth: 800,
@@ -144,8 +159,159 @@ async function createMainWindow() {
     mainWin.webContents.send('window-unmaximized')
   })
 
+  // 关闭窗口时隐藏到托盘而不是退出
+  mainWin.on('close', (event) => {
+    if (!app.isQuiting) {
+      event.preventDefault()
+      mainWin.hide()
+    }
+  })
+
   mainWin.on('closed', () => {
     mainWin = null
+  })
+}
+
+// 创建系统托盘
+function createTray() {
+  // 根据环境选择正确的图标路径
+  const iconPath = process.env.VITE_DEV_SERVER_URL 
+    ? path.join(__dirname, '../public/logo.png')
+    : path.join(process.env.DIST, 'logo.png')
+  const trayIcon = nativeImage.createFromPath(iconPath)
+  
+  // 在 Windows 上调整图标大小
+  if (process.platform === 'win32') {
+    tray = new Tray(trayIcon.resize({ width: 16, height: 16 }))
+  } else {
+    tray = new Tray(trayIcon)
+  }
+  
+  // 设置托盘提示文字
+  tray.setToolTip('MistNote - 安全加密的即时通讯')
+  
+  // 创建托盘菜单
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '我在线上',
+      type: 'radio',
+      checked: true,
+      click: () => {
+        // 设置在线状态
+        if (mainWin) {
+          mainWin.webContents.send('set-status', 'online')
+        }
+      }
+    },
+    {
+      label: '忙碌',
+      type: 'radio',
+      click: () => {
+        // 设置忙碌状态
+        if (mainWin) {
+          mainWin.webContents.send('set-status', 'busy')
+        }
+      }
+    },
+    {
+      label: '离开',
+      type: 'radio',
+      click: () => {
+        // 设置离开状态
+        if (mainWin) {
+          mainWin.webContents.send('set-status', 'away')
+        }
+      }
+    },
+    {
+      label: '隐身',
+      type: 'radio',
+      click: () => {
+        // 设置隐身状态
+        if (mainWin) {
+          mainWin.webContents.send('set-status', 'invisible')
+        }
+      }
+    },
+    {
+      label: '请勿打扰',
+      type: 'radio',
+      click: () => {
+        // 设置请勿打扰状态
+        if (mainWin) {
+          mainWin.webContents.send('set-status', 'dnd')
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '打开所有声音',
+      type: 'checkbox',
+      checked: true,
+      click: (menuItem) => {
+        // 切换声音开关
+        if (mainWin) {
+          mainWin.webContents.send('toggle-sound', menuItem.checked)
+        }
+      }
+    },
+    {
+      label: '关闭头像闪动',
+      type: 'checkbox',
+      click: (menuItem) => {
+        // 切换头像闪动
+        if (mainWin) {
+          mainWin.webContents.send('toggle-avatar-flash', !menuItem.checked)
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '打开主面板',
+      click: () => {
+        if (mainWin) {
+          mainWin.show()
+          mainWin.focus()
+        } else {
+          createMainWindow()
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '退出',
+      click: () => {
+        app.isQuiting = true
+        app.quit()
+      }
+    }
+  ])
+  
+  // 设置托盘菜单
+  tray.setContextMenu(contextMenu)
+  
+  // 单击托盘图标时显示/隐藏窗口
+  tray.on('click', () => {
+    if (mainWin) {
+      if (mainWin.isVisible()) {
+        mainWin.hide()
+      } else {
+        mainWin.show()
+        mainWin.focus()
+      }
+    } else {
+      createMainWindow()
+    }
+  })
+  
+  // 双击托盘图标时显示窗口
+  tray.on('double-click', () => {
+    if (mainWin) {
+      mainWin.show()
+      mainWin.focus()
+    } else {
+      createMainWindow()
+    }
   })
 }
 
@@ -164,7 +330,22 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   loginWin = null
   mainWin = null
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== 'darwin') {
+    // 清理托盘
+    if (tray) {
+      tray.destroy()
+      tray = null
+    }
+    app.quit()
+  }
+})
+
+app.on('before-quit', () => {
+  // 清理托盘
+  if (tray) {
+    tray.destroy()
+    tray = null
+  }
 })
 
 // 头像相关IPC处理器

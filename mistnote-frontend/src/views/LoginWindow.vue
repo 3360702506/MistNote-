@@ -8,6 +8,8 @@
       <div class="light-beam light-beam-1"></div>
       <div class="light-beam light-beam-2"></div>
       <div class="light-beam light-beam-3"></div>
+      <div class="light-beam light-beam-4"></div>
+      <div class="light-beam light-beam-5"></div>
       <div class="gradient-overlay"></div>
     </div>
 
@@ -528,7 +530,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 50%, #fff3e0 100%);
+  background: linear-gradient(-45deg, #a8e6fc, #ddd6f3, #fbc2eb, #a6c1ee, #f8b7d2, #c9d6ff);
+  background-size: 400% 400%;
+  animation: gradientFlow 15s ease infinite;
 }
 
 /* 拖动区域 */
@@ -552,54 +556,157 @@ onMounted(() => {
   bottom: 0;
   overflow: hidden;
   z-index: 1;
+  opacity: 0.15; /* 降低整体透明度让流光更柔和 */
 }
 
 .light-beam {
   position: absolute;
   width: 200%;
-  height: 1px;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(144, 202, 249, 0.3) 50%, 
+    rgba(255, 255, 255, 0.08) 20%,
+    rgba(255, 255, 255, 0.15) 50%, 
+    rgba(255, 255, 255, 0.08) 80%,
     transparent 100%);
-  animation: flowingLight 12s linear infinite;
+  filter: blur(8px); /* 增加模糊度 */
 }
 
 .light-beam-1 {
-  top: 25%;
+  top: 15%;
   left: -100%;
+  height: 2px;
+  transform: rotate(-15deg);
+  animation: flowingLight 30s ease-in-out infinite; /* 更慢的速度 */
   animation-delay: 0s;
-  transform: rotate(-10deg);
 }
 
 .light-beam-2 {
-  top: 60%;
+  top: 45%;
   left: -100%;
-  animation-delay: 4s;
-  transform: rotate(5deg);
+  height: 4px;
+  transform: rotate(8deg);
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(186, 104, 200, 0.2) 50%, 
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.12) 50%, 
+    rgba(255, 255, 255, 0.05) 75%,
     transparent 100%);
+  animation: flowingLightDiagonal 35s ease-in-out infinite;
+  animation-delay: 5s;
+  filter: blur(10px);
 }
 
 .light-beam-3 {
-  top: 85%;
-  left: -100%;
-  animation-delay: 8s;
-  transform: rotate(-3deg);
+  top: 75%;
+  left: 100%;
+  height: 3px;
+  transform: rotate(-5deg);
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(255, 183, 77, 0.2) 50%, 
+    rgba(255, 255, 255, 0.06) 20%,
+    rgba(255, 255, 255, 0.1) 50%, 
+    rgba(255, 255, 255, 0.06) 80%,
     transparent 100%);
+  animation: flowingLightReverse 40s ease-in-out infinite;
+  animation-delay: 10s;
+  filter: blur(12px);
+}
+
+/* 添加更多随机光束 */
+.light-beam-4 {
+  top: 30%;
+  left: -100%;
+  height: 3px;
+  transform: rotate(12deg);
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.04) 30%,
+    rgba(255, 255, 255, 0.08) 50%, 
+    rgba(255, 255, 255, 0.04) 70%,
+    transparent 100%);
+  animation: flowingLight 32s ease-in-out infinite;
+  animation-delay: 8s;
+  filter: blur(15px);
+}
+
+.light-beam-5 {
+  top: 55%;
+  left: 100%;
+  height: 2px;
+  transform: rotate(-20deg);
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.05) 35%,
+    rgba(255, 255, 255, 0.09) 50%, 
+    rgba(255, 255, 255, 0.05) 65%,
+    transparent 100%);
+  animation: flowingLightReverse 38s ease-in-out infinite;
+  animation-delay: 15s;
+  filter: blur(10px);
 }
 
 @keyframes flowingLight {
   0% {
     left: -100%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
   }
   100% {
     left: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes flowingLightDiagonal {
+  0% {
+    left: -100%;
+    top: -20%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    left: 100%;
+    top: 120%;
+    opacity: 0;
+  }
+}
+
+@keyframes flowingLightReverse {
+  0% {
+    left: 100%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    left: -100%;
+    opacity: 0;
+  }
+}
+
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
@@ -610,19 +717,31 @@ onMounted(() => {
   right: 0;
   bottom: 0;
   background: radial-gradient(
-    ellipse at center,
-    rgba(255, 255, 255, 0.05) 0%,
-    transparent 80%
+    circle at 30% 80%,
+    rgba(147, 112, 219, 0.3) 0%,
+    transparent 50%
+  ),
+  radial-gradient(
+    circle at 70% 20%,
+    rgba(79, 172, 254, 0.3) 0%,
+    transparent 50%
+  ),
+  radial-gradient(
+    circle at 50% 50%,
+    rgba(138, 43, 226, 0.2) 0%,
+    transparent 70%
   );
-  animation: pulseGlow 6s ease-in-out infinite alternate;
+  animation: pulseGlow 4s ease-in-out infinite alternate;
 }
 
 @keyframes pulseGlow {
   0% {
     opacity: 0.3;
+    transform: scale(1);
   }
   100% {
-    opacity: 0.7;
+    opacity: 0.8;
+    transform: scale(1.1);
   }
 }
 
@@ -642,18 +761,17 @@ onMounted(() => {
   height: 32px;
   border: none;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0);
+  color: rgba(255, 255, 255, 0.9);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
   backdrop-filter: blur(10px);
 }
 
 .control-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
   color: white;
 }
 
@@ -674,10 +792,7 @@ onMounted(() => {
   width: 340px;
   padding: 50px 35px;
   background: transparent;
-  backdrop-filter: none;
-  border-radius: 0;
-  box-shadow: none;
-  border: none;
+  border-radius: 20px;
 }
 
 /* 头像区域 */

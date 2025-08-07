@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import WelcomeView from '../views/WelcomeView.vue'
-import LoginView from '../views/LoginView.vue'
 import LoginWindow from '../views/LoginWindow.vue'
 
 const routes = [

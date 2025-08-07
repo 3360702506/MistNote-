@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, shell, nativeImage, Tray, Menu } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path$1 from "node:path";
@@ -1043,15 +1043,17 @@ if (process.platform === "win32") app.disableHardwareAcceleration();
 if (process.platform === "win32") app.setAppUserModelId(app.getName());
 let loginWin = null;
 let mainWin = null;
+let tray = null;
 const preload = process.env.VITE_DEV_SERVER_URL ? path$1.join(__dirname, "preload.js") : path$1.join(__dirname, "preload.js");
 const url = process.env.VITE_DEV_SERVER_URL;
 const indexHtml = path$1.join(process.env.DIST, "index.html");
 let clientUserDataManager = null;
 let databaseManager = null;
 async function createLoginWindow() {
+  const iconPath = process.env.VITE_DEV_SERVER_URL ? path$1.join(__dirname, "../public/logo.png") : path$1.join(process.env.DIST, "logo.png");
   loginWin = new BrowserWindow({
     title: "MistNote - 登录",
-    icon: path$1.join(process.env.VITE_PUBLIC, "favicon.ico"),
+    icon: iconPath,
     width: 400,
     height: 600,
     resizable: false,
@@ -1081,6 +1083,9 @@ async function createLoginWindow() {
   loginWin.webContents.on("ipc-message", (event, channel) => {
     if (channel === "login-success") {
       createMainWindow();
+      if (!tray) {
+        createTray();
+      }
       loginWin.close();
     }
   });
@@ -1089,9 +1094,10 @@ async function createLoginWindow() {
   });
 }
 async function createMainWindow() {
+  const iconPath = process.env.VITE_DEV_SERVER_URL ? path$1.join(__dirname, "../../public/logo.png") : path$1.join(process.env.DIST, "logo.png");
   mainWin = new BrowserWindow({
     title: "MistNote",
-    icon: path$1.join(process.env.VITE_PUBLIC, "favicon.ico"),
+    icon: iconPath,
     width: 1200,
     height: 800,
     minWidth: 800,
@@ -1127,8 +1133,133 @@ async function createMainWindow() {
   mainWin.on("unmaximize", () => {
     mainWin.webContents.send("window-unmaximized");
   });
+  mainWin.on("close", (event) => {
+    if (!app.isQuiting) {
+      event.preventDefault();
+      mainWin.hide();
+    }
+  });
   mainWin.on("closed", () => {
     mainWin = null;
+  });
+}
+function createTray() {
+  const iconPath = process.env.VITE_DEV_SERVER_URL ? path$1.join(__dirname, "../public/logo.png") : path$1.join(process.env.DIST, "logo.png");
+  const trayIcon = nativeImage.createFromPath(iconPath);
+  if (process.platform === "win32") {
+    tray = new Tray(trayIcon.resize({ width: 16, height: 16 }));
+  } else {
+    tray = new Tray(trayIcon);
+  }
+  tray.setToolTip("MistNote - 安全加密的即时通讯");
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "我在线上",
+      type: "radio",
+      checked: true,
+      click: () => {
+        if (mainWin) {
+          mainWin.webContents.send("set-status", "online");
+        }
+      }
+    },
+    {
+      label: "忙碌",
+      type: "radio",
+      click: () => {
+        if (mainWin) {
+          mainWin.webContents.send("set-status", "busy");
+        }
+      }
+    },
+    {
+      label: "离开",
+      type: "radio",
+      click: () => {
+        if (mainWin) {
+          mainWin.webContents.send("set-status", "away");
+        }
+      }
+    },
+    {
+      label: "隐身",
+      type: "radio",
+      click: () => {
+        if (mainWin) {
+          mainWin.webContents.send("set-status", "invisible");
+        }
+      }
+    },
+    {
+      label: "请勿打扰",
+      type: "radio",
+      click: () => {
+        if (mainWin) {
+          mainWin.webContents.send("set-status", "dnd");
+        }
+      }
+    },
+    { type: "separator" },
+    {
+      label: "打开所有声音",
+      type: "checkbox",
+      checked: true,
+      click: (menuItem) => {
+        if (mainWin) {
+          mainWin.webContents.send("toggle-sound", menuItem.checked);
+        }
+      }
+    },
+    {
+      label: "关闭头像闪动",
+      type: "checkbox",
+      click: (menuItem) => {
+        if (mainWin) {
+          mainWin.webContents.send("toggle-avatar-flash", !menuItem.checked);
+        }
+      }
+    },
+    { type: "separator" },
+    {
+      label: "打开主面板",
+      click: () => {
+        if (mainWin) {
+          mainWin.show();
+          mainWin.focus();
+        } else {
+          createMainWindow();
+        }
+      }
+    },
+    { type: "separator" },
+    {
+      label: "退出",
+      click: () => {
+        app.isQuiting = true;
+        app.quit();
+      }
+    }
+  ]);
+  tray.setContextMenu(contextMenu);
+  tray.on("click", () => {
+    if (mainWin) {
+      if (mainWin.isVisible()) {
+        mainWin.hide();
+      } else {
+        mainWin.show();
+        mainWin.focus();
+      }
+    } else {
+      createMainWindow();
+    }
+  });
+  tray.on("double-click", () => {
+    if (mainWin) {
+      mainWin.show();
+      mainWin.focus();
+    } else {
+      createMainWindow();
+    }
   });
 }
 app.whenReady().then(() => {
@@ -1142,7 +1273,19 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => {
   loginWin = null;
   mainWin = null;
-  if (process.platform !== "darwin") app.quit();
+  if (process.platform !== "darwin") {
+    if (tray) {
+      tray.destroy();
+      tray = null;
+    }
+    app.quit();
+  }
+});
+app.on("before-quit", () => {
+  if (tray) {
+    tray.destroy();
+    tray = null;
+  }
 });
 ipcMain.handle("save-avatar-info", async (event, userId, avatarData) => {
   try {
