@@ -233,12 +233,13 @@ const maxHeight = 200
 const messages = ref([]) // 所有消息
 const visibleMessages = ref([]) // 当前可见的消息
 const isLoadingMore = ref(false) // 是否正在加载更多
+const isLoadingHistory = ref(false) // 是否正在加载历史记录
 const hasMoreMessages = ref(true) // 是否还有更多消息
 const currentPage = ref(1) // 当前页码
 const pageSize = 20 // 每页消息数
 const scrollPosition = ref(0) // 记录滚动位置
 const isResizing = ref(false)
-const userAvatar = ref('/logo.png')
+const userAvatar = ref('logo.png')
 
 // 联系人信息
 const contactInfo = ref({
@@ -287,46 +288,53 @@ const loadMoreMessages = async () => {
   
   try {
     // 保存当前滚动高度
-    const prevScrollHeight = messagesArea.value.scrollHeight
+    const prevScrollHeight = messagesArea.value?.scrollHeight || 0
     
-    // 模拟加载历史消息
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // 从服务器加载更多历史消息
+    const nextPage = currentPage.value + 1
+    console.log(`加载第${nextPage}页历史消息`)
     
-    // 生成历史消息
-    const historyMessages = []
-    const startId = messages.value.length > 0 ? Math.min(...messages.value.map(m => m.id)) - 20 : 100
+    const result = await messageService.getChatHistory(props.contactId, nextPage, pageSize)
     
-    for (let i = 0; i < pageSize; i++) {
-      historyMessages.push({
-        id: startId + i,
-        content: `历史消息 ${startId + i}`,
-        isSent: Math.random() > 0.5,
-        time: new Date(Date.now() - (20 - i) * 60000).toLocaleTimeString('zh-CN', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
-        status: 'sent',
-        avatar: Math.random() > 0.5 ? userAvatar.value : contactInfo.value.avatar
-      })
-    }
-    
-    // 将历史消息添加到消息列表开头
-    messages.value = [...historyMessages, ...messages.value]
-    
-    // 更新可见消息
-    updateVisibleMessages()
-    
-    // 保持滚动位置
-    await nextTick()
-    if (messagesArea.value) {
-      const newScrollHeight = messagesArea.value.scrollHeight
-      messagesArea.value.scrollTop = newScrollHeight - prevScrollHeight + scrollPosition.value
-    }
-    
-    // 检查是否还有更多消息
-    currentPage.value++
-    if (currentPage.value > 5) { // 假设最多5页
+    if (result.success && result.data.messages.length > 0) {
+      // 处理新加载的消息
+      const newMessages = result.data.messages.map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.isSent ? null : (msg.senderName || contactInfo.value.name),
+        avatar: msg.isSent ? userAvatar.value : (msg.senderAvatar || contactInfo.value.avatar),
+        timestamp: msg.timestamp,
+        isSent: msg.isSent,
+        status: msg.status
+      }))
+      
+      // 将历史消息添加到开头
+      messages.value = [...newMessages, ...messages.value]
+      updateVisibleMessages()
+      
+      // 保持滚动位置
+      await nextTick()
+      if (messagesArea.value) {
+        const newScrollHeight = messagesArea.value.scrollHeight
+        messagesArea.value.scrollTop = newScrollHeight - prevScrollHeight
+      }
+      
+      // 更新分页信息
+      currentPage.value = nextPage
+      
+      // 安全地检查 pagination 是否存在
+      if (result.data.pagination) {
+        hasMoreMessages.value = result.data.pagination.hasMore
+      } else {
+        // 如果没有 pagination 信息，根据返回的消息数量判断
+        hasMoreMessages.value = newMessages.length >= pageSize
+      }
+      
+      console.log(`已加载${newMessages.length}条历史消息，当前共${messages.value.length}条`)
+    } else {
+      // 没有更多消息了
       hasMoreMessages.value = false
+      console.log('没有更多历史消息了')
     }
   } catch (error) {
     console.error('加载历史消息失败:', error)
@@ -413,7 +421,7 @@ watch(() => props.contactId, async (newContactId, oldContactId) => {
     // 清空当前消息
     messages.value = []
     currentPage.value = 1
-    hasMoreHistory.value = true
+    hasMoreMessages.value = true
     
     // 更新联系人信息
     contactInfo.value.id = newContactId
@@ -590,8 +598,21 @@ const loadChatHistory = async () => {
         status: msg.status
       }))
       
-      hasMoreHistory.value = result.data.pagination.hasMore
+      // 安全地检查 pagination 是否存在
+      if (result.data.pagination) {
+        hasMoreMessages.value = result.data.pagination.hasMore
+      } else {
+        // 如果没有 pagination 信息（比如从本地加载），默认没有更多消息
+        hasMoreMessages.value = false
+        if (result.data.fromLocal) {
+          console.log('从本地数据库加载的消息')
+        }
+      }
+      
       console.log(`聊天历史已加载，共${messages.value.length}条消息`)
+      
+      // 更新可见消息
+      updateVisibleMessages()
     }
   } catch (error) {
     console.error('加载聊天历史失败:', error)
