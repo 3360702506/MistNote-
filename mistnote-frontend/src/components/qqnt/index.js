@@ -7,6 +7,7 @@ import QListItem from './QListItem.vue'
 import QBadge from './QBadge.vue'
 import QButton from './QButton.vue'
 import QModal from './QModal.vue'
+import QContextMenu from './QContextMenu.vue'
 
 export {
   QAvatar,
@@ -14,7 +15,8 @@ export {
   QListItem,
   QBadge,
   QButton,
-  QModal
+  QModal,
+  QContextMenu
 }
 
 // 待实现的组件

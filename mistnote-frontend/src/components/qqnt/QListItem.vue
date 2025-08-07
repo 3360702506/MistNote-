@@ -7,7 +7,7 @@
         'selected': selected,
         'disabled': disabled,
         'clickable': clickable && !disabled,
-        'dragging': isDragging
+        'muted': muted
       },
       sizeClass
     ]"
@@ -15,9 +15,6 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @contextmenu.prevent="handleContextMenu"
-    :draggable="draggable && !disabled"
-    @dragstart="handleDragStart"
-    @dragend="handleDragEnd"
   >
     <!-- 左侧区域 -->
     <div class="q-list-item-prefix" v-if="$slots.prefix || avatar">
@@ -31,6 +28,21 @@
           :size="avatarSize"
         />
       </slot>
+    </div>
+    
+    <!-- Badge -->
+    <div 
+      class="q-list-item-badge" 
+      v-if="badge && badge > 0 && !badgeDismissed"
+      ref="badgeRef"
+      :style="badgeStyle"
+      @mousedown="startBadgeDrag"
+      @touchstart="startBadgeDrag"
+    >
+      <q-badge :count="badge" :type="badgeType" />
+      <div v-if="isDraggingBadge" class="badge-dismiss-hint">
+        {{ dragDistance > DISMISS_THRESHOLD ? '松开清除' : '拖动清除' }}
+      </div>
     </div>
     
     <!-- 主内容区域 -->
@@ -86,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import QAvatar from './QAvatar.vue'
 import QBadge from './QBadge.vue'
 
@@ -148,10 +160,18 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['click', 'contextmenu', 'mouseenter', 'mouseleave', 'dragstart', 'dragend'])
+const emit = defineEmits(['click', 'contextmenu', 'mouseenter', 'mouseleave', 'dragstart', 'dragend', 'badge-dismiss'])
 
-const isDragging = ref(false)
 const isHovered = ref(false)
+const isDraggingBadge = ref(false)
+const badgeDismissed = ref(false)
+const badgeRef = ref(null)
+const dragStartX = ref(0)
+const dragStartY = ref(0)
+const dragX = ref(0)
+const dragY = ref(0)
+const dragDistance = ref(0)
+const DISMISS_THRESHOLD = 80 // 拖动距离阈值
 
 const sizeClass = computed(() => `q-list-item-${props.size}`)
 
@@ -179,6 +199,16 @@ const formatTime = (time) => {
   }
 }
 
+const badgeStyle = computed(() => {
+  if (!isDraggingBadge.value) return {}
+  return {
+    transform: `translate(${dragX.value}px, ${dragY.value}px) scale(${1 + dragDistance.value / 200})`,
+    opacity: Math.max(0.3, 1 - dragDistance.value / 150),
+    transition: 'none',
+    zIndex: 1000
+  }
+})
+
 const handleClick = (e) => {
   if (!props.disabled && props.clickable) {
     emit('click', e)
@@ -201,17 +231,75 @@ const handleMouseLeave = (e) => {
   emit('mouseleave', e)
 }
 
-const handleDragStart = (e) => {
-  if (props.draggable && !props.disabled) {
-    isDragging.value = true
-    emit('dragstart', e)
-  }
+const startBadgeDrag = (e) => {
+  e.preventDefault()
+  e.stopPropagation()
+  
+  isDraggingBadge.value = true
+  const touch = e.touches ? e.touches[0] : e
+  dragStartX.value = touch.clientX
+  dragStartY.value = touch.clientY
+  dragX.value = 0
+  dragY.value = 0
+  dragDistance.value = 0
+  
+  document.addEventListener('mousemove', handleBadgeDrag)
+  document.addEventListener('mouseup', endBadgeDrag)
+  document.addEventListener('touchmove', handleBadgeDrag)
+  document.addEventListener('touchend', endBadgeDrag)
 }
 
-const handleDragEnd = (e) => {
-  isDragging.value = false
-  emit('dragend', e)
+const handleBadgeDrag = (e) => {
+  if (!isDraggingBadge.value) return
+  
+  const touch = e.touches ? e.touches[0] : e
+  dragX.value = touch.clientX - dragStartX.value
+  dragY.value = touch.clientY - dragStartY.value
+  dragDistance.value = Math.sqrt(dragX.value ** 2 + dragY.value ** 2)
 }
+
+const endBadgeDrag = (e) => {
+  if (!isDraggingBadge.value) return
+  
+  document.removeEventListener('mousemove', handleBadgeDrag)
+  document.removeEventListener('mouseup', endBadgeDrag)
+  document.removeEventListener('touchmove', handleBadgeDrag)
+  document.removeEventListener('touchend', endBadgeDrag)
+  
+  if (dragDistance.value > DISMISS_THRESHOLD) {
+    // 触发消除动画
+    badgeDismissed.value = true
+    emit('badge-dismiss')
+    
+    // 动画效果
+    if (badgeRef.value) {
+      badgeRef.value.style.transform = `translate(${dragX.value * 2}px, ${dragY.value * 2}px) scale(0)`
+      badgeRef.value.style.opacity = '0'
+      badgeRef.value.style.transition = 'all 0.3s ease-out'
+    }
+    
+    setTimeout(() => {
+      badgeDismissed.value = false
+    }, 300)
+  } else {
+    // 回弹动画
+    dragX.value = 0
+    dragY.value = 0
+    dragDistance.value = 0
+    setTimeout(() => {
+      isDraggingBadge.value = false
+    }, 200)
+  }
+  
+  isDraggingBadge.value = false
+}
+
+onUnmounted(() => {
+  document.removeEventListener('mousemove', handleBadgeDrag)
+  document.removeEventListener('mouseup', endBadgeDrag)
+  document.removeEventListener('touchmove', handleBadgeDrag)
+  document.removeEventListener('touchend', endBadgeDrag)
+})
 </script>
 
 <style scoped>
@@ -239,6 +327,46 @@ const handleDragEnd = (e) => {
 .q-list-item-large {
   padding: 12px 16px;
   min-height: 80px;
+}
+
+.q-list-item-badge {
+  margin-left: auto;
+  padding-left: 8px;
+  cursor: grab;
+  user-select: none;
+  position: relative;
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+.q-list-item-badge:active {
+  cursor: grabbing;
+}
+
+.badge-dismiss-hint {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #999;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* 交互状态 */

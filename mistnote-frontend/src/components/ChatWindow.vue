@@ -53,10 +53,17 @@
     </div>
 
     <!-- 消息区域 -->
-    <div class="messages-area" ref="messagesArea">
+    <div class="messages-area" ref="messagesArea" @scroll="handleScroll">
+      <!-- 加载更多提示 -->
+      <div v-if="isLoadingMore" class="loading-more">
+        <span class="loading-spinner"></span>
+        <span>加载历史消息中...</span>
+      </div>
+      <div v-if="hasMoreMessages" class="load-more-trigger" ref="loadMoreTrigger"></div>
+      
       <div class="messages-container">
         <div
-          v-for="message in messages"
+          v-for="message in visibleMessages"
           :key="message.id"
           class="message-item"
           :class="{ 'message-sent': message.isSent, 'message-received': !message.isSent }"
@@ -212,21 +219,26 @@ const props = defineProps({
 })
 
 const userStore = useUserStore()
-const messageInput = ref(null)
 const messagesArea = ref(null)
-const inputContent = ref('')
-const inputHeight = ref(80)
-const minInputHeight = 60
-const maxInputHeight = 200
+const messageInput = ref(null)
+const loadMoreTrigger = ref(null)
+const inputHeight = ref(60)
+const isDragging = ref(false)
+const startY = ref(0)
+const startHeight = ref(60)
+const minHeight = 60
+const maxHeight = 200
+
+// 虚拟滚动相关
+const messages = ref([]) // 所有消息
+const visibleMessages = ref([]) // 当前可见的消息
+const isLoadingMore = ref(false) // 是否正在加载更多
+const hasMoreMessages = ref(true) // 是否还有更多消息
+const currentPage = ref(1) // 当前页码
+const pageSize = 20 // 每页消息数
+const scrollPosition = ref(0) // 记录滚动位置
 const isResizing = ref(false)
 const userAvatar = ref('/logo.png')
-const isLoading = ref(false)
-const isLoadingHistory = ref(false)
-const hasMoreHistory = ref(true)
-const currentPage = ref(1)
-
-// 消息列表
-const messages = ref([])
 
 // 联系人信息
 const contactInfo = ref({
@@ -235,6 +247,9 @@ const contactInfo = ref({
   avatar: props.contactAvatar,
   isOnline: props.isOnline
 })
+
+// 输入框内容
+const inputContent = ref('')
 
 const handleInput = (e) => {
   inputContent.value = e.target.innerText
@@ -247,8 +262,92 @@ const handleKeydown = (e) => {
   }
 }
 
+// 处理滚动事件
+const handleScroll = () => {
+  if (!messagesArea.value) return
+  
+  const scrollTop = messagesArea.value.scrollTop
+  const scrollHeight = messagesArea.value.scrollHeight
+  const clientHeight = messagesArea.value.clientHeight
+  
+  // 记录滚动位置
+  scrollPosition.value = scrollTop
+  
+  // 如果滚动到顶部，加载更多历史消息
+  if (scrollTop < 100 && !isLoadingMore.value && hasMoreMessages.value) {
+    loadMoreMessages()
+  }
+}
+
+// 加载更多消息
+const loadMoreMessages = async () => {
+  if (isLoadingMore.value || !hasMoreMessages.value) return
+  
+  isLoadingMore.value = true
+  
+  try {
+    // 保存当前滚动高度
+    const prevScrollHeight = messagesArea.value.scrollHeight
+    
+    // 模拟加载历史消息
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // 生成历史消息
+    const historyMessages = []
+    const startId = messages.value.length > 0 ? Math.min(...messages.value.map(m => m.id)) - 20 : 100
+    
+    for (let i = 0; i < pageSize; i++) {
+      historyMessages.push({
+        id: startId + i,
+        content: `历史消息 ${startId + i}`,
+        isSent: Math.random() > 0.5,
+        time: new Date(Date.now() - (20 - i) * 60000).toLocaleTimeString('zh-CN', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        status: 'sent',
+        avatar: Math.random() > 0.5 ? userAvatar.value : contactInfo.value.avatar
+      })
+    }
+    
+    // 将历史消息添加到消息列表开头
+    messages.value = [...historyMessages, ...messages.value]
+    
+    // 更新可见消息
+    updateVisibleMessages()
+    
+    // 保持滚动位置
+    await nextTick()
+    if (messagesArea.value) {
+      const newScrollHeight = messagesArea.value.scrollHeight
+      messagesArea.value.scrollTop = newScrollHeight - prevScrollHeight + scrollPosition.value
+    }
+    
+    // 检查是否还有更多消息
+    currentPage.value++
+    if (currentPage.value > 5) { // 假设最多5页
+      hasMoreMessages.value = false
+    }
+  } catch (error) {
+    console.error('加载历史消息失败:', error)
+  } finally {
+    isLoadingMore.value = false
+  }
+}
+
+// 更新可见消息
+const updateVisibleMessages = () => {
+  // 简单实现：显示最近的100条消息
+  const maxVisible = 100
+  if (messages.value.length > maxVisible) {
+    visibleMessages.value = messages.value.slice(-maxVisible)
+  } else {
+    visibleMessages.value = [...messages.value]
+  }
+}
+
 const sendMessage = async () => {
-  if (inputContent.value.trim() && !isLoading.value) {
+  if (inputContent.value.trim()) {
     const content = inputContent.value.trim()
     
     // 清空输入框

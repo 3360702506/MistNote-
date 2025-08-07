@@ -127,19 +127,12 @@
       @update:show="showAddFriendDialog = $event"
       @friend-request-sent="handleFriendRequestSent"
     />
-    
-    <!-- 好友请求列表对话框 -->
-    <n-modal :show="showFriendRequestList" @update:show="showFriendRequestList = $event" preset="card" title="好友通知" style="width: 500px;">
-      <FriendRequestList 
-        @friend-added="handleFriendAdded"
-      />
-    </n-modal>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { NIcon, NModal, useMessage } from 'naive-ui'
+import { NIcon, useMessage } from 'naive-ui'
 import {
   Search as SearchIcon,
   Add as AddIcon,
@@ -147,7 +140,6 @@ import {
   ChevronForward as ChevronForwardIcon
 } from '@vicons/ionicons5'
 import AddFriendDialog from './AddFriendDialog.vue'
-import FriendRequestList from './FriendRequestList.vue'
 import { useUserStore } from '@/stores/user'
 import socketService from '@/services/socket'
 
@@ -253,7 +245,7 @@ const filteredGroups = computed(() => {
 })
 
 // 定义事件
-const emit = defineEmits(['contact-select'])
+const emit = defineEmits(['contact-select', 'show-friend-notifications'])
 
 // 选择联系人
 const selectContact = (contactId) => {
@@ -278,7 +270,6 @@ const setActiveTab = (tab) => {
 
 // 对话框状态
 const showAddFriendDialog = ref(false);
-const showFriendRequestList = ref(false);
 
 // 功能方法
 const addContact = () => {
@@ -290,7 +281,7 @@ const openFriendManager = () => {
 }
 
 const openFriendNotifications = () => {
-  showFriendRequestList.value = true;
+  emit('show-friend-notifications')
 }
 
 const openGroupNotifications = () => {

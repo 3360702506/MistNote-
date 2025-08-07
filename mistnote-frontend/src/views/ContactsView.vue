@@ -4,13 +4,22 @@
     <Sidebar />
 
     <!-- 联系人列表 -->
-    <ContactsList @contact-select="handleContactSelect" />
+    <ContactsList 
+      @contact-select="handleContactSelect" 
+      @show-friend-notifications="showFriendNotifications"
+    />
 
     <!-- 主要内容区域 -->
     <div class="main-content">
+      <!-- 好友通知 -->
+      <FriendNotification
+        v-if="showNotifications"
+        @friend-added="handleFriendAdded"
+      />
+      
       <!-- 联系人详情 -->
       <ContactDetail
-        v-if="selectedContactId"
+        v-else-if="selectedContactId"
         :contact="getSelectedContact()"
       />
 
@@ -33,11 +42,25 @@ import { ref } from 'vue'
 import Sidebar from '../components/Sidebar.vue'
 import ContactsList from '../components/ContactsList.vue'
 import ContactDetail from '../components/ContactDetail.vue'
+import FriendNotification from '../components/FriendNotification.vue'
 
 const selectedContactId = ref(null)
+const showNotifications = ref(false)
 
 const handleContactSelect = (contactId) => {
   selectedContactId.value = contactId
+  showNotifications.value = false
+}
+
+const showFriendNotifications = () => {
+  showNotifications.value = true
+  selectedContactId.value = null
+}
+
+const handleFriendAdded = (friend) => {
+  // 处理好友添加成功的逻辑
+  console.log('Friend added:', friend)
+  // 可以在这里刷新好友列表或其他操作
 }
 
 // 模拟联系人数据

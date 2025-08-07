@@ -1,80 +1,55 @@
 <template>
   <div class="chat-list" :style="{ width: chatListWidth + 'px' }">
-    <!-- 搜索框 -->
+    <!-- 搜索框 - 使用 QSearchBox 组件 -->
     <div class="search-section">
-      <div class="search-box">
-        <n-icon size="16" color="#999" class="search-icon">
-          <SearchIcon />
-        </n-icon>
-        <input 
-          type="text" 
-          placeholder="搜索" 
-          v-model="searchQuery"
-          class="search-input"
-        />
-        <n-icon size="16" color="#999" class="add-icon" @click="addChat">
-          <AddIcon />
-        </n-icon>
-      </div>
+      <q-search-box 
+        v-model="searchQuery"
+        placeholder="搜索"
+        :clearable="true"
+        @search="handleSearch"
+      >
+        <template #suffix>
+          <n-icon size="16" color="#999" class="add-icon" @click="addChat">
+            <AddIcon />
+          </n-icon>
+        </template>
+      </q-search-box>
     </div>
 
-    <!-- 聊天列表 -->
+    <!-- 聊天列表 - 使用 QListItem 组件 -->
     <div class="chat-items">
-      <div
+      <q-list-item
         v-for="chat in filteredChats"
         :key="chat.id"
-        class="chat-item-wrapper"
-        :class="{
-          'dragging': draggingChatId === chat.id,
-          'removing': removingChatId === chat.id
-        }"
-        :style="getDragStyle(chat.id)"
-      >
-        <div
-          class="chat-item"
-          :class="{ active: chat.id === activeChatId }"
-          @click="selectChat(chat.id)"
-          @mousedown="startDrag($event, chat.id)"
-          @touchstart="startDrag($event, chat.id)"
-        >
-        <div class="avatar">
-          <img :src="chat.avatar" :alt="chat.name" />
-          <div v-if="chat.online" class="online-indicator"></div>
-        </div>
-        
-        <div class="chat-info">
-          <div class="chat-header">
-            <div class="chat-name">{{ chat.name }}</div>
-            <div class="chat-time">{{ chat.time }}</div>
-          </div>
-          <div class="chat-preview">
-            <span class="sender" v-if="chat.sender">{{ chat.sender }}：</span>
-            <span class="message">{{ chat.lastMessage }}</span>
-          </div>
-        </div>
-        
-        <div class="chat-status">
-          <div
-            v-if="chat.unreadCount > 0"
-            class="unread-badge"
-            :class="{
-              'badge-dragging': draggingBadgeId === chat.id,
-              'badge-removing': removingBadgeId === chat.id,
-              'badge-muted': chat.messageType === 'muted'
-            }"
-            :style="getBadgeDragStyle(chat.id)"
-            @mousedown.stop="startBadgeDrag($event, chat.id)"
-            @touchstart.stop="startBadgeDrag($event, chat.id)"
-          >
-            {{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}
-          </div>
-          <n-icon v-if="chat.muted" size="14" color="#999" class="mute-icon">
-            <MuteIcon />
-          </n-icon>
-        </div>
-        </div>
-      </div>
+        :title="chat.name"
+        :description="chat.lastMessage"
+        :description-prefix="chat.sender ? `${chat.sender}:` : ''"
+        :time="chat.time"
+        :avatar="chat.avatar"
+        :avatar-status="chat.online ? 'online' : 'offline'"
+        :badge="chat.unreadCount"
+        :badge-type="chat.muted ? 'default' : 'danger'"
+        :muted="chat.muted"
+        :active="chat.id === activeChatId"
+        :draggable="true"
+        @click="selectChat(chat.id)"
+        @dragstart="(e) => startDrag(e, chat.id)"
+        @dragend="(e) => endDrag(e, chat.id)"
+        @contextmenu.prevent="(e) => showContextMenu(e, chat)"
+        @badge-dismiss="() => clearUnreadCount(chat.id)"
+        class="chat-list-item"
+      />
     </div>
+
+    <!-- 右键菜单 -->
+    <q-context-menu
+      :visible="contextMenuVisible"
+      :x="contextMenuX"
+      :y="contextMenuY"
+      :items="contextMenuItems"
+      @close="contextMenuVisible = false"
+      @select="handleMenuSelect"
+    />
 
     <!-- 拖拽手柄 -->
     <div
@@ -82,13 +57,14 @@
       @mousedown="startResize"
     ></div>
 
-    <!-- 添加聊天弹窗 -->
-    <div v-if="showAddModal" class="modal-overlay" @click="showAddModal = false">
-      <div class="add-chat-modal" @click.stop>
-        <div class="modal-header">
-          <h3>添加聊天</h3>
-          <button class="close-btn" @click="showAddModal = false">×</button>
-        </div>
+    <!-- 添加聊天弹窗 - 使用 QModal 组件 -->
+    <q-modal
+      v-model="showAddModal"
+      title="添加聊天"
+      size="medium"
+      :show-footer="false"
+    >
+      <div class="add-chat-content">
         
         <div class="modal-tabs">
           <button 
@@ -217,7 +193,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </q-modal>
   </div>
 </template>
 
@@ -233,6 +209,8 @@ import {
 } from '@vicons/ionicons5'
 import { useUserStore } from '@/stores/user'
 import socketService from '@/services/socket'
+import messageService from '@/services/messageService'
+import { QSearchBox, QListItem, QModal, QContextMenu } from './qqnt'
 
 const userStore = useUserStore()
 const message = useMessage()
@@ -307,6 +285,13 @@ const badgeDragCurrentX = ref(0)
 const badgeDragCurrentY = ref(0)
 const isBadgeDragging = ref(false)
 const badgeDragThreshold = 50 // 小红点拖拽消失的阈值距离
+
+// 右键菜单控制
+const contextMenuVisible = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const contextMenuTarget = ref(null)
+const contextMenuItems = ref([])
 
 // 模拟聊天数据
 const chatList = ref([
@@ -418,8 +403,16 @@ const addFriend = async () => {
     const result = await response.json()
     
     if (response.ok) {
-      message.success('好友请求已发送')
+      // 不在这里显示消息，避免重复通知
+      // message.success('好友请求已发送')
       showAddModal.value = false
+      
+      // 重置表单
+      friendForm.value = {
+        userId: '',
+        nickname: '',
+        message: '我是' + (userStore.user?.profile?.displayName || userStore.user?.userId || '用户')
+      }
       
       // 可选：刷新好友列表或聊天列表
       await loadFriends()
@@ -757,66 +750,122 @@ onMounted(() => {
 
 // 开始拖拽聊天项
 const startDrag = (e, chatId) => {
-  // 防止与点击事件冲突
-  e.preventDefault()
-
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY
-
+  // 设置拖拽数据
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', chatId)
+  }
   draggingChatId.value = chatId
-  dragStartX.value = clientX
-  dragStartY.value = clientY
-  dragCurrentX.value = clientX
-  dragCurrentY.value = clientY
+  isDragging.value = true
+}
+
+// 结束拖拽聊天项
+const endDrag = (e, chatId) => {
+  draggingChatId.value = null
   isDragging.value = false
+}
 
-  const handleMouseMove = (e) => {
-    const currentX = e.touches ? e.touches[0].clientX : e.clientX
-    const currentY = e.touches ? e.touches[0].clientY : e.clientY
-
-    dragCurrentX.value = currentX
-    dragCurrentY.value = currentY
-
-    const deltaX = Math.abs(currentX - dragStartX.value)
-    const deltaY = Math.abs(currentY - dragStartY.value)
-
-    // 如果移动距离超过阈值，开始拖拽
-    if (!isDragging.value && (deltaX > 5 || deltaY > 5)) {
-      isDragging.value = true
-    }
+// 显示右键菜单
+const showContextMenu = (e, chat) => {
+  e.preventDefault()
+  e.stopPropagation()
+  
+  contextMenuTarget.value = chat
+  contextMenuX.value = e.clientX
+  contextMenuY.value = e.clientY
+  
+  // 根据聊天类型设置菜单项
+  if (chat.type === 'friend' || !chat.type) {
+    // 单人聊天菜单
+    contextMenuItems.value = [
+      { label: '置顶', action: () => togglePin(chat) },
+      { label: '复制ID', action: () => copyUserId(chat) },
+      { label: '标记未读', action: () => markAsUnread(chat) },
+      { type: 'separator' },
+      { label: '打开独立聊天窗口', action: () => openChatWindow(chat) },
+      { label: '设置免打扰', action: () => toggleMute(chat) },
+      { type: 'separator' },
+      { label: '从消息列表中移除', action: () => removeChat(chat), danger: true },
+      { label: '屏蔽此人消息', action: () => blockUser(chat), danger: true }
+    ]
+  } else {
+    // 群聊菜单（可扩展）
+    contextMenuItems.value = [
+      { label: '置顶', action: () => togglePin(chat) },
+      { label: '复制群号', action: () => copyUserId(chat) },
+      { label: '标记未读', action: () => markAsUnread(chat) },
+      { type: 'separator' },
+      { label: '打开独立聊天窗口', action: () => openChatWindow(chat) },
+      { label: '消息免打扰', action: () => toggleMute(chat) },
+      { type: 'separator' },
+      { label: '退出群聊', action: () => leaveGroup(chat), danger: true }
+    ]
   }
+  
+  contextMenuVisible.value = true
+}
 
-  const handleMouseUp = () => {
-    const deltaX = dragCurrentX.value - dragStartX.value
-    const shouldRemove = Math.abs(deltaX) > dragThreshold
+// 处理菜单选择
+const handleMenuSelect = (item) => {
+  console.log('Menu item selected:', item)
+}
 
-    if (shouldRemove && isDragging.value) {
-      // 开始删除动画
-      removingChatId.value = chatId
-      setTimeout(() => {
-        // 从列表中移除聊天项
-        const index = chatList.value.findIndex(chat => chat.id === chatId)
-        if (index > -1) {
-          chatList.value.splice(index, 1)
-        }
-        removingChatId.value = null
-      }, 300) // 动画持续时间
-    }
+// 菜单操作函数
+const togglePin = (chat) => {
+  chat.pinned = !chat.pinned
+  console.log('Toggle pin:', chat.id)
+}
 
-    // 清理拖拽状态
-    draggingChatId.value = null
-    isDragging.value = false
+const copyUserId = (chat) => {
+  const userId = chat.userId || chat.id
+  navigator.clipboard.writeText(userId.toString())
+  message.success(`已复制ID: ${userId}`)
+}
 
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
-    document.removeEventListener('touchmove', handleMouseMove)
-    document.removeEventListener('touchend', handleMouseUp)
+const markAsUnread = (chat) => {
+  chat.unreadCount = chat.unreadCount || 1
+  console.log('Mark as unread:', chat.id)
+}
+
+const openChatWindow = (chat) => {
+  console.log('Open chat window:', chat.id)
+  // TODO: 实现独立聊天窗口
+}
+
+const toggleMute = (chat) => {
+  chat.muted = !chat.muted
+  console.log('Toggle mute:', chat.id)
+}
+
+const removeChat = (chat) => {
+  const index = chatList.value.findIndex(c => c.id === chat.id)
+  if (index > -1) {
+    chatList.value.splice(index, 1)
+    message.success('已从消息列表中移除')
   }
+}
 
-  document.addEventListener('mousemove', handleMouseMove)
-  document.addEventListener('mouseup', handleMouseUp)
-  document.addEventListener('touchmove', handleMouseMove)
-  document.addEventListener('touchend', handleMouseUp)
+const blockUser = (chat) => {
+  console.log('Block user:', chat.id)
+  message.warning('屏蔽功能暂未实现')
+}
+
+const leaveGroup = (chat) => {
+  console.log('Leave group:', chat.id)
+  message.warning('退群功能暂未实现')
+}
+
+// 清除未读消息数（badge拖动消除）
+const clearUnreadCount = (chatId) => {
+  const chat = chatList.value.find(c => c.id === chatId)
+  if (chat) {
+    chat.unreadCount = 0
+    console.log('清除未读消息数:', chatId)
+    
+    // 可以添加动画效果或其他处理
+    // 例如：向服务器发送已读状态
+    // markAsRead(chatId)
+  }
 }
 
 // 开始拖拽小红点
@@ -976,6 +1025,18 @@ const cleanupDragStyles = () => {
 .chat-items {
   flex: 1;
   overflow-y: auto;
+  padding: 0;
+}
+
+/* QListItem 组件样式覆盖 */
+.chat-list-item {
+  margin: 0;
+  border-radius: 0;
+  transition: all 0.3s ease;
+}
+
+.chat-list-item:hover {
+  background-color: #f8f9fa;
 }
 
 .chat-item-wrapper {

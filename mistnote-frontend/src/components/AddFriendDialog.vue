@@ -169,7 +169,8 @@ const sendFriendRequest = async () => {
     const data = await response.json();
     
     if (data.success) {
-      message.success('好友请求已发送！');
+      // 只在这里显示一次成功消息
+      message.success('好友请求已发送');
       emit('friend-request-sent', {
         targetUser: searchResult.value,
         message: formData.value.message
