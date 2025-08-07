@@ -330,12 +330,22 @@ const activeItem = computed(() => {
 })
 
 const setActive = (item) => {
-  if (item === 'mistnote') {
-    router.push('/chat')
-  } else if (item === 'contacts') {
-    router.push('/contacts')
+  console.log('Sidebar点击事件:', item)
+  
+  try {
+    if (item === 'mistnote') {
+      console.log('导航到聊天页面')
+      router.push('/chat')
+    } else if (item === 'contacts') {
+      console.log('导航到联系人页面')
+      router.push('/contacts')
+    } else {
+      console.log('其他导航项:', item)
+      // 其他导航项可以在这里添加路由
+    }
+  } catch (error) {
+    console.error('Sidebar导航错误:', error)
   }
-  // 其他导航项可以在这里添加路由
 }
 
 // 用户菜单相关

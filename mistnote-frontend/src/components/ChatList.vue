@@ -223,14 +223,16 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { NIcon, NModal, NTabs, NTabPane, NForm, NFormItem, NInput, NSelect, NButton } from 'naive-ui'
+import { NIcon, NInput, NButton, NModal, NSelect, NScrollbar, useMessage } from 'naive-ui'
 import {
   Search as SearchIcon,
   Add as AddIcon,
+  Close as CloseIcon,
+  ChevronDown as ChevronDownIcon,
   VolumeOff as MuteIcon
 } from '@vicons/ionicons5'
-import { useUserStore } from '../stores/user'
-import { useMessage } from 'naive-ui'
+import { useUserStore } from '@/stores/user'
+import socketService from '@/services/socket'
 
 const userStore = useUserStore()
 const message = useMessage()
@@ -308,6 +310,7 @@ const badgeDragThreshold = 50 // 小红点拖拽消失的阈值距离
 
 // 模拟聊天数据
 const chatList = ref([
+  // 初始为空，新好友会动态添加到这里
 ])
 
 // 过滤聊天列表
@@ -502,12 +505,156 @@ const loadFriends = async () => {
   }
 }
 
-// 组件初始化
-onMounted(() => {
-  // 如果用户已登录，加载好友列表
-  if (userStore.token) {
-    loadFriends()
+// 全局事件监听
+const setupGlobalEventListeners = () => {
+  console.log('设置ChatList全局事件监听器')
+  console.log('当前用户ID:', userStore.user?._id)
+  console.log('当前用户信息:', userStore.user)
+  
+  // 监听好友请求被接受事件
+  const handleFriendRequestAccepted = (event) => {
+    const data = event.detail
+    console.log('=== ChatList收到friendRequestAccepted事件 ===', data)
+    console.log('当前chatList长度:', chatList.value.length)
+    
+    // 创建新的聊天记录
+    const newChat = {
+      id: data.friend._id,
+      userId: data.friend.userId,
+      name: data.friend.profile?.displayName || data.friend.userId,
+      avatar: data.friend.profile?.avatar || '/default-avatar.png',
+      lastMessage: data.welcomeMessage?.content || '我们已经成为好友了，快来聊天吧~',
+      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      unreadCount: 1,
+      online: true,
+      muted: false,
+      deleted: false,
+      deletedAt: null,
+      messageType: 'normal'
+    }
+    
+    // 检查是否已存在，避免重复添加
+    const exists = chatList.value.find(chat => chat.id === data.friend._id)
+    if (!exists) {
+      chatList.value.unshift(newChat) // 添加到列表顶部
+      console.log('=== 新聊天项已添加到列表 ===', newChat)
+      console.log('更新后chatList长度:', chatList.value.length)
+    } else {
+      console.log('聊天项已存在，跳过添加')
+    }
   }
+  
+  // 监听新好友添加事件
+  const handleFriendAdded = (event) => {
+    const data = event.detail
+    console.log('=== ChatList收到friendAdded事件 ===', data)
+    console.log('当前chatList长度:', chatList.value.length)
+    
+    // 创建新的聊天记录
+    const newChat = {
+      id: data.friend._id,
+      userId: data.friend.userId,
+      name: data.friend.profile?.displayName || data.friend.userId,
+      avatar: data.friend.profile?.avatar || '/default-avatar.png',
+      lastMessage: '开始聊天吧！',
+      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      unreadCount: 0,
+      online: data.friend.isOnline || false,
+      muted: false,
+      deleted: false,
+      deletedAt: null,
+      messageType: 'normal'
+    }
+    
+    // 检查是否已存在，避免重复添加
+    const exists2 = chatList.value.find(chat => chat.id === data.friend._id)
+    if (!exists2) {
+      chatList.value.unshift(newChat) // 添加到列表顶部
+      console.log('=== 新聊天项已添加到列表 ===', newChat)
+      console.log('更新后chatList长度:', chatList.value.length)
+    } else {
+      console.log('聊天项已存在，跳过添加')
+    }
+  }
+  
+  // 添加事件监听器
+  window.addEventListener('friendRequestAccepted', handleFriendRequestAccepted)
+  window.addEventListener('friendAdded', handleFriendAdded)
+  
+  // 返回清理函数
+  return () => {
+    window.removeEventListener('friendRequestAccepted', handleFriendRequestAccepted)
+    window.removeEventListener('friendAdded', handleFriendAdded)
+  }
+}
+
+// 初始化聊天列表
+const initializeChatList = async () => {
+  console.log('初始化聊天列表')
+  
+  try {
+    // 获取好友列表并同步到聊天列表
+    console.log('获取好友列表并同步到聊天列表...')
+    const response = await fetch('http://localhost:5000/api/friends', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      console.log('获取到好友列表:', data)
+      
+      if (data.success && data.data) {
+        // 将好友转换为聊天项
+        const friendChats = data.data.map(friend => ({
+          id: friend._id,
+          userId: friend.userId,
+          name: friend.profile?.displayName || friend.userId,
+          avatar: friend.profile?.avatar || '/default-avatar.png',
+          lastMessage: '开始聊天吧！',
+          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          unreadCount: 0,
+          online: friend.isOnline || false,
+          muted: false,
+          deleted: false,
+          deletedAt: null,
+          messageType: 'normal'
+        }))
+        
+        // 更新聊天列表
+        chatList.value = friendChats
+        console.log('聊天列表已同步，共', friendChats.length, '个好友')
+      }
+    } else {
+      console.error('获取好友列表失败:', response.status)
+    }
+  } catch (error) {
+    console.error('获取好友列表出错:', error)
+  }
+  
+  // TODO: 从API获取聊天记录数据
+  // 这里可以添加获取聊天记录的逻辑
+}
+
+// 清理全局事件监听器
+let cleanupGlobalListeners = null
+
+// 生命周期
+onMounted(() => {
+  console.log('ChatList组件已挂载')
+  
+  // 初始化聊天列表（获取好友列表并同步）
+  initializeChatList()
+  
+  // 设置全局事件监听器
+  const cleanup = setupGlobalEventListeners()
+  
+  // 在组件卸载时清理
+  onUnmounted(() => {
+    console.log('清理ChatList全局事件监听器')
+    cleanup()
+  })
 })
 
 // 开始拖拽聊天项
@@ -672,16 +819,11 @@ const startResize = (e) => {
   document.body.style.userSelect = 'none'
 }
 
-// 组件挂载和卸载时的清理
-onMounted(() => {
-  // 可以在这里添加初始化逻辑
-})
-
-onUnmounted(() => {
-  // 清理可能残留的事件监听器
+// 清理拖拽相关的样式
+const cleanupDragStyles = () => {
   document.body.style.cursor = 'default'
   document.body.style.userSelect = 'auto'
-})
+}
 </script>
 
 <style scoped>

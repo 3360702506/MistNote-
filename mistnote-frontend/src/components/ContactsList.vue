@@ -139,7 +139,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { NIcon, NModal } from 'naive-ui'
+import { NIcon, NModal, useMessage } from 'naive-ui'
 import {
   Search as SearchIcon,
   Add as AddIcon,
@@ -148,6 +148,8 @@ import {
 } from '@vicons/ionicons5'
 import AddFriendDialog from './AddFriendDialog.vue'
 import FriendRequestList from './FriendRequestList.vue'
+import { useUserStore } from '@/stores/user'
+import socketService from '@/services/socket'
 
 const searchQuery = ref('')
 const activeContactId = ref(null)
@@ -160,49 +162,46 @@ const minWidth = 200
 const maxWidth = 500
 const isResizing = ref(false)
 
-// 模拟联系人数据
-const contactsData = ref([
-  {
-    id: 1,
-    name: '谢智贤',
-    avatar: '/logo.png',
-    isOnline: true,
-    signature: '今天也要加油呀！',
-    group: '我的好友'
-  },
-  {
-    id: 2,
-    name: '张三',
-    avatar: '/logo.png',
-    isOnline: false,
-    signature: '忙碌中...',
-    group: '同学'
-  },
-  {
-    id: 3,
-    name: '李四',
-    avatar: '/logo.png',
-    isOnline: true,
-    signature: '生活美好',
-    group: '朋友'
-  },
-  {
-    id: 4,
-    name: '王五',
-    avatar: '/logo.png',
-    isOnline: false,
-    signature: '',
-    group: '朋友'
-  },
-  {
-    id: 5,
-    name: '小助手',
-    avatar: '/logo.png',
-    isOnline: true,
-    signature: '我是智能助手',
-    group: '机器人'
+// 用户存储和消息组件
+const userStore = useUserStore()
+const message = useMessage()
+
+// 真实好友数据
+const contactsData = ref([])
+const loading = ref(false)
+
+// 获取好友列表
+const loadFriends = async () => {
+  try {
+    loading.value = true
+    const response = await fetch('http://localhost:5000/api/friends', {
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    
+    if (response.ok) {
+      const result = await response.json()
+      if (result.success && Array.isArray(result.data)) {
+        contactsData.value = result.data.map(friend => ({
+          id: friend._id,
+          userId: friend.userId,
+          name: friend.displayName || friend.username,
+          avatar: friend.avatar || '/default-avatar.png',
+          isOnline: friend.isOnline || false,
+          signature: '',
+          group: '我的好友',
+          addedAt: friend.addedAt
+        }))
+      }
+    }
+  } catch (error) {
+    console.error('加载好友列表失败:', error)
+    message.error('加载好友列表失败')
+  } finally {
+    loading.value = false
   }
-])
+}
 
 // 分组数据
 const groupsData = [
@@ -306,7 +305,57 @@ const handleFriendRequestSent = (data) => {
 // 处理好友添加成功
 const handleFriendAdded = (friend) => {
   console.log('新好友添加:', friend);
-  // 这里可以刷新好友列表或添加到现有列表
+  
+  // 添加到好友列表
+  const newFriend = {
+    id: friend._id,
+    userId: friend.userId,
+    name: friend.profile?.displayName || friend.username,
+    avatar: friend.profile?.avatar || '/default-avatar.png',
+    isOnline: friend.isOnline || false,
+    signature: '',
+    group: '我的好友',
+    addedAt: new Date()
+  }
+  
+  // 检查是否已存在，避免重复添加
+  const exists = contactsData.value.find(contact => contact.id === friend._id)
+  if (!exists) {
+    contactsData.value.unshift(newFriend) // 添加到列表顶部
+    message.success(`已添加好友: ${newFriend.name}`)
+  }
+}
+
+// Socket.IO事件监听
+const setupSocketListeners = () => {
+  console.log('ContactsList setupSocketListeners 被调用')
+  console.log('ContactsList Socket连接状态:', socketService.isConnected)
+  
+  if (!socketService.isConnected) {
+    console.log('ContactsList Socket未连接，等待连接后再设置监听器')
+    return
+  }
+  
+  console.log('设置ContactsList Socket事件监听器')
+  
+  // 监听好友添加事件
+  socketService.on('friendAdded', (data) => {
+    console.log('ContactsList收到friendAdded事件:', data)
+    handleFriendAdded(data.friend)
+  })
+  
+  // 监听好友请求被接受事件
+  socketService.on('friendRequestAccepted', (data) => {
+    console.log('ContactsList收到friendRequestAccepted事件:', data)
+    handleFriendAdded(data.friend)
+  })
+}
+
+// 清理Socket监听器
+const cleanupSocketListeners = () => {
+  console.log('清理ContactsList Socket事件监听器')
+  socketService.off('friendAdded')
+  socketService.off('friendRequestAccepted')
 }
 
 // 拖拽调整宽度
@@ -334,10 +383,30 @@ const startResize = (e) => {
 }
 
 onMounted(() => {
-  // 默认展开所有分组
+  console.log('ContactsList组件已挂载')
+  
+  // 初始化加载好友列表
+  if (userStore.token) {
+    loadFriends()
+  }
+  
+  // 设置Socket事件监听（如果Socket未连接，延迟重试）
+  const trySetupSocket = () => {
+    if (socketService.isConnected) {
+      setupSocketListeners()
+    } else {
+      console.log('ContactsList Socket未连接，2秒后重试...')
+      setTimeout(trySetupSocket, 2000)
+    }
+  }
+  
+  trySetupSocket()
 })
 
 onUnmounted(() => {
+  // 清理Socket监听器
+  cleanupSocketListeners()
+  // 清理事件监听器
   // 清理事件监听器
 })
 </script>

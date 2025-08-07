@@ -93,6 +93,23 @@ class SocketService {
     this.socket.on('online_users_list', (data) => {
       this.emit('online_users_list', data);
     });
+
+    // 好友相关事件
+    this.socket.on('friendRequestReceived', (data) => {
+      this.emit('friendRequestReceived', data);
+    });
+
+    this.socket.on('friendRequestAccepted', (data) => {
+      this.emit('friendRequestAccepted', data);
+    });
+
+    this.socket.on('friendAdded', (data) => {
+      this.emit('friendAdded', data);
+    });
+
+    this.socket.on('friendRequestRejected', (data) => {
+      this.emit('friendRequestRejected', data);
+    });
   }
 
   // 断开连接

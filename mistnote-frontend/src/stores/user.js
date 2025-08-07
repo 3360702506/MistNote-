@@ -263,8 +263,13 @@ export const useUserStore = defineStore('user', {
 
     // 连接Socket.IO
     connectSocket() {
-      if (!this.token) return;
+      console.log('userStore connectSocket 被调用, token:', !!this.token);
+      if (!this.token) {
+        console.log('token不存在，退出connectSocket');
+        return;
+      }
       
+      console.log('开始连接Socket.IO...');
       socketService.connect(this.token);
       
       // 监听连接状态
@@ -292,12 +297,52 @@ export const useUserStore = defineStore('user', {
           this.onlineUsers[userIndex].isOnline = data.isOnline;
         }
       });
+      
+      // 监听好友相关事件
+      console.log('准备设置好友事件监听器...');
+      this.setupFriendEventListeners();
+      console.log('好友事件监听器设置完成');
+    },
+
+    // 设置好友事件监听器
+    setupFriendEventListeners() {
+      console.log('=== 设置全局好友事件监听器 ===');
+      console.log('socketService存在:', !!socketService);
+      console.log('socketService.on存在:', typeof socketService.on);
+      
+      // 监听所有Socket事件（调试用）
+      if (socketService.socket && socketService.socket.onAny) {
+        socketService.socket.onAny((eventName, ...args) => {
+          console.log('全局收到Socket事件:', eventName, args);
+        });
+      }
+      
+      // 监听好友请求被接受事件
+      socketService.on('friendRequestAccepted', (data) => {
+        console.log('全局收到friendRequestAccepted事件:', data);
+        // 触发自定义事件，通知各个组件
+        window.dispatchEvent(new CustomEvent('friendRequestAccepted', { detail: data }));
+      });
+      
+      // 监听新好友添加事件
+      socketService.on('friendAdded', (data) => {
+        console.log('全局收到friendAdded事件:', data);
+        // 触发自定义事件，通知各个组件
+        window.dispatchEvent(new CustomEvent('friendAdded', { detail: data }));
+      });
+      
+      // 监听好友请求接收事件
+      socketService.on('friendRequestReceived', (data) => {
+        console.log('全局收到friendRequestReceived事件:', data);
+        // 触发自定义事件，通知各个组件
+        window.dispatchEvent(new CustomEvent('friendRequestReceived', { detail: data }));
+      });
     },
 
     // 发送点赞
     sendLike(targetUserId) {
-      if (this.isSocketConnected) {
-        socketService.sendLike(targetUserId);
+      if (socketService.isConnected) {
+        socketService.emit('send_like', { targetUserId });
       }
     },
 
