@@ -536,16 +536,34 @@ class MessageService {
     // 确保使用数字userId而不是ObjectId
     const normalizeUserId = (id) => {
       if (!id) return null
-      // 如果是数字字符串或数字，直接返回
-      if (/^\d+$/.test(id.toString())) {
-        return id.toString()
+      
+      // 将ID转换为字符串
+      const idStr = id.toString()
+      
+      // 如果是数字字符串（5位或更少），直接返回
+      if (/^\d{1,5}$/.test(idStr)) {
+        return idStr
       }
-      // 如果是ObjectId格式，警告并返回原值
-      if (typeof id === 'string' && id.length === 24) {
-        console.warn('检测到ObjectId格式的用户ID，可能导致会话ID不匹配:', id)
-        return id
+      
+      // 如果是ObjectId格式（24位十六进制），需要特殊处理
+      if (/^[a-f0-9]{24}$/i.test(idStr)) {
+        console.error('检测到ObjectId格式的用户ID，这会导致会话ID不匹配:', idStr)
+        console.error('请确保使用5位数字userId而不是MongoDB的_id')
+        // 尝试从localStorage获取正确的userId
+        try {
+          const userStore = JSON.parse(localStorage.getItem('user') || '{}')
+          if (userStore._id === idStr && userStore.userId) {
+            console.log('找到对应的5位数字ID:', userStore.userId)
+            return userStore.userId.toString()
+          }
+        } catch (e) {
+          console.error('无法从localStorage获取用户信息:', e)
+        }
+        // 如果无法找到对应的userId，仍返回原值（但会导致问题）
+        return idStr
       }
-      return id.toString()
+      
+      return idStr
     }
     
     const normalizedId1 = normalizeUserId(userId1)
@@ -569,10 +587,11 @@ class MessageService {
    */
   getCurrentUserId() {
     // 从用户状态管理中获取当前用户ID
-    // 这里需要根据实际的用户状态管理实现
+    // 优先返回5位数字ID (userId)，而不是ObjectId (_id)
     try {
       const userStore = JSON.parse(localStorage.getItem('user') || '{}')
-      return userStore._id || userStore.userId
+      // 优先使用userId（5位数字ID），这是用于聊天会话的标准ID
+      return userStore.userId || userStore._id
     } catch {
       return null
     }
