@@ -171,6 +171,21 @@ class ClientUserDataManager {
           file_size INTEGER,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
+      `,
+      userCache: `
+        CREATE TABLE IF NOT EXISTS user_cache (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT UNIQUE NOT NULL,
+          display_name TEXT DEFAULT '',
+          signature TEXT DEFAULT '',
+          avatar TEXT DEFAULT '',
+          location TEXT DEFAULT '',
+          status TEXT DEFAULT 'offline',
+          last_seen DATETIME,
+          cache_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
       `
     };
   }

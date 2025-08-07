@@ -241,6 +241,124 @@ ipcMain.handle('save-file-to-user-folder', async (event, userId, folderType, fil
   }
 })
 
+// 用户缓存相关IPC处理器
+ipcMain.handle('get-user-cache-info', async (event, userId) => {
+  try {
+    if (clientUserDataManager && databaseManager) {
+      const currentUserId = clientUserDataManager.getCurrentUserId()
+      const dbPath = clientUserDataManager.getUserDatabasePath(currentUserId)
+      
+      // 从用户缓存表获取信息
+      const db = await databaseManager.getDatabase(dbPath)
+      const sql = `SELECT * FROM user_cache WHERE user_id = ?`
+      const result = await db.getAsync(sql, [userId])
+      
+      return { success: true, data: result }
+    }
+    return { success: false, error: '用户数据管理器未初始化' }
+  } catch (error) {
+    console.error('获取用户缓存信息失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+ipcMain.handle('save-user-cache-info', async (event, userId, cacheData) => {
+  try {
+    if (clientUserDataManager && databaseManager) {
+      const currentUserId = clientUserDataManager.getCurrentUserId()
+      const dbPath = clientUserDataManager.getUserDatabasePath(currentUserId)
+      
+      const db = await databaseManager.getDatabase(dbPath)
+      const sql = `
+        INSERT OR REPLACE INTO user_cache 
+        (user_id, display_name, signature, avatar, location, status, last_seen, cache_time) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `
+      
+      const result = await db.runAsync(sql, [
+        userId,
+        cacheData.displayName || '',
+        cacheData.signature || '',
+        cacheData.avatar || '',
+        cacheData.location || '',
+        cacheData.status || 'offline',
+        cacheData.lastSeen || new Date().toISOString(),
+        cacheData.cacheTime || new Date().toISOString()
+      ])
+      
+      return { success: true, result }
+    }
+    return { success: false, error: '用户数据管理器未初始化' }
+  } catch (error) {
+    console.error('保存用户缓存信息失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+ipcMain.handle('get-user-avatar', async (event, userId) => {
+  try {
+    if (clientUserDataManager) {
+      const currentUserId = clientUserDataManager.getCurrentUserId()
+      const avatarsPath = clientUserDataManager.getUserAvatarsPath(currentUserId)
+      const avatarPath = path.join(avatarsPath, `${userId}.jpg`)
+      
+      if (fs.existsSync(avatarPath)) {
+        return { success: true, path: avatarPath }
+      }
+      
+      // 尝试其他格式
+      const extensions = ['.png', '.jpeg', '.gif', '.webp']
+      for (const ext of extensions) {
+        const altPath = path.join(avatarsPath, `${userId}${ext}`)
+        if (fs.existsSync(altPath)) {
+          return { success: true, path: altPath }
+        }
+      }
+      
+      return { success: false, error: '本地头像不存在' }
+    }
+    return { success: false, error: '用户数据管理器未初始化' }
+  } catch (error) {
+    console.error('获取用户头像失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+ipcMain.handle('cache-user-avatar', async (event, userId, avatarUrl) => {
+  try {
+    if (clientUserDataManager) {
+      const currentUserId = clientUserDataManager.getCurrentUserId()
+      const avatarsPath = clientUserDataManager.getUserAvatarsPath(currentUserId)
+      
+      // 下载头像
+      const response = await fetch(avatarUrl)
+      if (!response.ok) {
+        throw new Error(`下载头像失败: ${response.status}`)
+      }
+      
+      const buffer = await response.arrayBuffer()
+      const uint8Array = new Uint8Array(buffer)
+      
+      // 确定文件扩展名
+      const contentType = response.headers.get('content-type') || ''
+      let extension = '.jpg'
+      if (contentType.includes('png')) extension = '.png'
+      else if (contentType.includes('gif')) extension = '.gif'
+      else if (contentType.includes('webp')) extension = '.webp'
+      
+      const avatarPath = path.join(avatarsPath, `${userId}${extension}`)
+      await fs.promises.writeFile(avatarPath, uint8Array)
+      
+      console.log(`用户头像已缓存: ${userId} -> ${avatarPath}`)
+      return { success: true, localPath: avatarPath }
+    }
+    return { success: false, error: '用户数据管理器未初始化' }
+  } catch (error) {
+    console.error('缓存用户头像失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
 app.on('before-quit', () => {
   // 关闭所有数据库连接
   if (databaseManager) {

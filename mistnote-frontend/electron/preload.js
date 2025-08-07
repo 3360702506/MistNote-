@@ -60,7 +60,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAvatarHistory: (userId, limit) => ipcRenderer.invoke('get-avatar-history', userId, limit),
   
   // 文件管理
-  saveFileToUserFolder: (userId, folderType, fileName, fileBuffer) => ipcRenderer.invoke('save-file-to-user-folder', userId, folderType, fileName, fileBuffer)
+  saveFileToUserFolder: (userId, folderType, fileName, fileBuffer) => ipcRenderer.invoke('save-file-to-user-folder', userId, folderType, fileName, fileBuffer),
+  
+  // 用户缓存管理
+  getUserCacheInfo: (userId) => ipcRenderer.invoke('get-user-cache-info', userId),
+  saveUserCacheInfo: (userId, cacheData) => ipcRenderer.invoke('save-user-cache-info', userId, cacheData),
+  getUserAvatar: (userId) => ipcRenderer.invoke('get-user-avatar', userId),
+  cacheUserAvatar: (userId, avatarUrl) => ipcRenderer.invoke('cache-user-avatar', userId, avatarUrl)
 })
 
 // --------- Preload scripts loading ---------

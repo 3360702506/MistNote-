@@ -512,68 +512,128 @@ const setupGlobalEventListeners = () => {
   console.log('当前用户信息:', userStore.user)
   
   // 监听好友请求被接受事件
-  const handleFriendRequestAccepted = (event) => {
+  const handleFriendRequestAccepted = async (event) => {
     const data = event.detail
     console.log('=== ChatList收到friendRequestAccepted事件 ===', data)
     console.log('当前chatList长度:', chatList.value.length)
     
-    // 创建新的聊天记录
-    const newChat = {
-      id: data.friend._id,
-      userId: data.friend.userId,
-      name: data.friend.profile?.displayName || data.friend.userId,
-      avatar: data.friend.profile?.avatar || '/default-avatar.png',
-      lastMessage: data.welcomeMessage?.content || '我们已经成为好友了，快来聊天吧~',
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-      unreadCount: 1,
-      online: true,
-      muted: false,
-      deleted: false,
-      deletedAt: null,
-      messageType: 'normal'
-    }
-    
-    // 检查是否已存在，避免重复添加
-    const exists = chatList.value.find(chat => chat.id === data.friend._id)
-    if (!exists) {
-      chatList.value.unshift(newChat) // 添加到列表顶部
-      console.log('=== 新聊天项已添加到列表 ===', newChat)
-      console.log('更新后chatList长度:', chatList.value.length)
-    } else {
-      console.log('聊天项已存在，跳过添加')
+    try {
+      // 使用用户缓存服务获取用户信息
+      const { default: userCacheService } = await import('@/services/userCacheService')
+      const cachedUserInfo = await userCacheService.getUserInfo(data.friend.userId || data.friend._id)
+      
+      // 创建新的聊天记录
+      const newChat = {
+        id: data.friend._id,
+        userId: data.friend.userId,
+        name: cachedUserInfo?.profile?.displayName || data.friend.profile?.displayName || data.friend.userId,
+        avatar: cachedUserInfo?.profile?.avatar || data.friend.profile?.avatar || '/default-avatar.png',
+        lastMessage: data.welcomeMessage?.content || '我们已经成为好友了，快来聊天吧~',
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        unreadCount: 1,
+        online: cachedUserInfo?.status === 'online' || true,
+        muted: false,
+        deleted: false,
+        deletedAt: null,
+        messageType: 'normal'
+      }
+      
+      // 检查是否已存在，避免重复添加
+      const exists = chatList.value.find(chat => chat.id === data.friend._id)
+      if (!exists) {
+        chatList.value.unshift(newChat) // 添加到列表顶部
+        console.log('=== 新聊天项已添加到列表 ===', newChat)
+        console.log('更新后chatList长度:', chatList.value.length)
+      } else {
+        console.log('聊天项已存在，跳过添加')
+      }
+    } catch (error) {
+      console.error('处理好友请求接受事件失败:', error)
+      // 如果缓存失败，使用原始数据
+      const newChat = {
+        id: data.friend._id,
+        userId: data.friend.userId,
+        name: data.friend.profile?.displayName || data.friend.userId,
+        avatar: data.friend.profile?.avatar || '/default-avatar.png',
+        lastMessage: data.welcomeMessage?.content || '我们已经成为好友了，快来聊天吧~',
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        unreadCount: 1,
+        online: true,
+        muted: false,
+        deleted: false,
+        deletedAt: null,
+        messageType: 'normal'
+      }
+      
+      const exists = chatList.value.find(chat => chat.id === data.friend._id)
+      if (!exists) {
+        chatList.value.unshift(newChat)
+        console.log('=== 新聊天项已添加到列表（使用原始数据）===', newChat)
+        console.log('更新后chatList长度:', chatList.value.length)
+      }
     }
   }
   
   // 监听新好友添加事件
-  const handleFriendAdded = (event) => {
+  const handleFriendAdded = async (event) => {
     const data = event.detail
     console.log('=== ChatList收到friendAdded事件 ===', data)
     console.log('当前chatList长度:', chatList.value.length)
     
-    // 创建新的聊天记录
-    const newChat = {
-      id: data.friend._id,
-      userId: data.friend.userId,
-      name: data.friend.profile?.displayName || data.friend.userId,
-      avatar: data.friend.profile?.avatar || '/default-avatar.png',
-      lastMessage: '开始聊天吧！',
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-      unreadCount: 0,
-      online: data.friend.isOnline || false,
-      muted: false,
-      deleted: false,
-      deletedAt: null,
-      messageType: 'normal'
-    }
-    
-    // 检查是否已存在，避免重复添加
-    const exists2 = chatList.value.find(chat => chat.id === data.friend._id)
-    if (!exists2) {
-      chatList.value.unshift(newChat) // 添加到列表顶部
-      console.log('=== 新聊天项已添加到列表 ===', newChat)
-      console.log('更新后chatList长度:', chatList.value.length)
-    } else {
-      console.log('聊天项已存在，跳过添加')
+    try {
+      // 使用用户缓存服务获取用户信息
+      const { default: userCacheService } = await import('@/services/userCacheService')
+      const cachedUserInfo = await userCacheService.getUserInfo(data.friend.userId || data.friend._id)
+      
+      // 创建新的聊天记录
+      const newChat = {
+        id: data.friend._id,
+        userId: data.friend.userId,
+        name: cachedUserInfo?.profile?.displayName || data.friend.profile?.displayName || data.friend.userId,
+        avatar: cachedUserInfo?.profile?.avatar || data.friend.profile?.avatar || '/default-avatar.png',
+        lastMessage: '开始聊天吧！',
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        unreadCount: 0,
+        online: cachedUserInfo?.status === 'online' || data.friend.isOnline || false,
+        muted: false,
+        deleted: false,
+        deletedAt: null,
+        messageType: 'normal'
+      }
+      
+      // 检查是否已存在，避免重复添加
+      const exists = chatList.value.find(chat => chat.id === data.friend._id)
+      if (!exists) {
+        chatList.value.unshift(newChat) // 添加到列表顶部
+        console.log('=== 新聊天项已添加到列表 ===', newChat)
+        console.log('更新后chatList长度:', chatList.value.length)
+      } else {
+        console.log('聊天项已存在，跳过添加')
+      }
+    } catch (error) {
+      console.error('处理新好友添加事件失败:', error)
+      // 如果缓存失败，使用原始数据
+      const newChat = {
+        id: data.friend._id,
+        userId: data.friend.userId,
+        name: data.friend.profile?.displayName || data.friend.userId,
+        avatar: data.friend.profile?.avatar || '/default-avatar.png',
+        lastMessage: '开始聊天吧！',
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        unreadCount: 0,
+        online: data.friend.isOnline || false,
+        muted: false,
+        deleted: false,
+        deletedAt: null,
+        messageType: 'normal'
+      }
+      
+      const exists = chatList.value.find(chat => chat.id === data.friend._id)
+      if (!exists) {
+        chatList.value.unshift(newChat)
+        console.log('=== 新聊天项已添加到列表（使用原始数据）===', newChat)
+        console.log('更新后chatList长度:', chatList.value.length)
+      }
     }
   }
   
@@ -606,20 +666,51 @@ const initializeChatList = async () => {
       console.log('获取到好友列表:', data)
       
       if (data.success && data.data) {
-        // 将好友转换为聊天项
-        const friendChats = data.data.map(friend => ({
-          id: friend._id,
-          userId: friend.userId,
-          name: friend.profile?.displayName || friend.userId,
-          avatar: friend.profile?.avatar || '/default-avatar.png',
-          lastMessage: '开始聊天吧！',
-          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-          unreadCount: 0,
-          online: friend.isOnline || false,
-          muted: false,
-          deleted: false,
-          deletedAt: null,
-          messageType: 'normal'
+        // 使用用户缓存服务获取用户信息
+        const { default: userCacheService } = await import('@/services/userCacheService')
+        
+        // 预加载好友的用户信息
+        const friendIds = data.data.map(friend => friend.userId || friend._id)
+        await userCacheService.preloadUsers(friendIds)
+        
+        // 将好友转换为聊天项（使用缓存的用户信息）
+        const friendChats = await Promise.all(data.data.map(async (friend) => {
+          try {
+            // 从缓存获取用户信息
+            const cachedUserInfo = await userCacheService.getUserInfo(friend.userId || friend._id)
+            
+            return {
+              id: friend._id,
+              userId: friend.userId,
+              name: cachedUserInfo?.profile?.displayName || friend.profile?.displayName || friend.userId,
+              avatar: cachedUserInfo?.profile?.avatar || friend.profile?.avatar || '/default-avatar.png',
+              lastMessage: '开始聊天吧！',
+              time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+              unreadCount: 0,
+              online: cachedUserInfo?.status === 'online' || friend.isOnline || false,
+              muted: false,
+              deleted: false,
+              deletedAt: null,
+              messageType: 'normal'
+            }
+          } catch (error) {
+            console.error(`获取用户信息失败: ${friend.userId}`, error)
+            // 如果缓存失败，使用原始数据
+            return {
+              id: friend._id,
+              userId: friend.userId,
+              name: friend.profile?.displayName || friend.userId,
+              avatar: friend.profile?.avatar || '/default-avatar.png',
+              lastMessage: '开始聊天吧！',
+              time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+              unreadCount: 0,
+              online: friend.isOnline || false,
+              muted: false,
+              deleted: false,
+              deletedAt: null,
+              messageType: 'normal'
+            }
+          }
         }))
         
         // 更新聊天列表
