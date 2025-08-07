@@ -3,9 +3,13 @@
     <!-- 聊天头部 -->
     <div class="chat-header">
       <div class="contact-info">
-        <div class="contact-name">{{ contactName }}</div>
-        <div class="online-status">
-          <div class="status-dot" :class="{ online: isOnline }"></div>
+        <div class="avatar-container">
+          <img :src="contactInfo.avatar" alt="头像" class="avatar" />
+          <div class="online-status" :class="{ online: contactInfo.isOnline }"></div>
+        </div>
+        <div class="contact-details">
+          <div class="contact-name">{{ contactInfo.name }}</div>
+          <div class="contact-status">{{ contactInfo.isOnline ? '在线' : '离线' }}</div>
         </div>
       </div>
       
@@ -182,13 +186,24 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useUserStore } from '@/stores/user'
+import messageService from '@/services/messageService'
+import userCacheService from '@/services/userCacheService'
 
 // 定义props
 const props = defineProps({
+  contactId: {
+    type: String,
+    required: true
+  },
   contactName: {
     type: String,
-    default: '谢智贤'
+    default: '联系人'
+  },
+  contactAvatar: {
+    type: String,
+    default: '/logo.png'
   },
   isOnline: {
     type: Boolean,
@@ -196,6 +211,7 @@ const props = defineProps({
   }
 })
 
+const userStore = useUserStore()
 const messageInput = ref(null)
 const messagesArea = ref(null)
 const inputContent = ref('')
@@ -204,48 +220,21 @@ const minInputHeight = 60
 const maxInputHeight = 200
 const isResizing = ref(false)
 const userAvatar = ref('/logo.png')
+const isLoading = ref(false)
+const isLoadingHistory = ref(false)
+const hasMoreHistory = ref(true)
+const currentPage = ref(1)
 
 // 消息列表
-const messages = ref([
-  {
-    id: 1,
-    content: '你好！最近怎么样？',
-    sender: props.contactName,
-    avatar: '/logo.png',
-    timestamp: new Date(Date.now() - 3600000),
-    isSent: false
-  },
-  {
-    id: 2,
-    content: '我很好，谢谢！你呢？工作忙吗？',
-    timestamp: new Date(Date.now() - 3000000),
-    isSent: true,
-    status: 'read'
-  },
-  {
-    id: 3,
-    content: '还好，最近在做一个新项目，挺有意思的。你有空的话我们可以聊聊。',
-    sender: props.contactName,
-    avatar: '/logo.png',
-    timestamp: new Date(Date.now() - 1800000),
-    isSent: false
-  },
-  {
-    id: 4,
-    content: '好的，我很感兴趣！什么时候方便？',
-    timestamp: new Date(Date.now() - 900000),
-    isSent: true,
-    status: 'read'
-  },
-  {
-    id: 5,
-    content: '今天下午怎么样？我们可以视频聊聊。',
-    sender: props.contactName,
-    avatar: '/logo.png',
-    timestamp: new Date(Date.now() - 300000),
-    isSent: false
-  }
-])
+const messages = ref([])
+
+// 联系人信息
+const contactInfo = ref({
+  id: props.contactId,
+  name: props.contactName,
+  avatar: props.contactAvatar,
+  isOnline: props.isOnline
+})
 
 const handleInput = (e) => {
   inputContent.value = e.target.innerText
@@ -258,32 +247,277 @@ const handleKeydown = (e) => {
   }
 }
 
-const sendMessage = () => {
-  if (inputContent.value.trim()) {
-    const newMessage = {
-      id: Date.now(),
-      content: inputContent.value.trim(),
-      timestamp: new Date(),
-      isSent: true,
-      status: 'sending'
-    }
-
-    messages.value.push(newMessage)
+const sendMessage = async () => {
+  if (inputContent.value.trim() && !isLoading.value) {
+    const content = inputContent.value.trim()
+    
+    // 清空输入框
     messageInput.value.innerText = ''
     inputContent.value = ''
-
-    // 滚动到底部
-    scrollToBottom()
-
-    // 模拟发送状态变化
-    setTimeout(() => {
-      newMessage.status = 'sent'
-    }, 1000)
-
-    setTimeout(() => {
-      newMessage.status = 'read'
-    }, 2000)
+    
+    try {
+      isLoading.value = true
+      await messageService.sendMessage(props.contactId, content, 'text')
+      console.log('消息发送成功')
+    } catch (error) {
+      console.error('发送消息失败:', error)
+      // 可以在这里显示错误提示
+    } finally {
+      isLoading.value = false
+    }
   }
+}
+
+/**
+ * 组件初始化
+ */
+onMounted(async () => {
+  console.log('ChatWindow组件已挂载，联系人ID:', props.contactId)
+  
+  // 设置消息事件监听器
+  setupMessageEventListeners()
+  
+  // 加载联系人信息
+  await loadContactInfo()
+  
+  // 加载聊天历史
+  await loadChatHistory()
+  
+  // 标记消息为已读
+  await markMessagesAsRead()
+  
+  // 滚动到底部
+  await nextTick()
+  scrollToBottom()
+})
+
+/**
+ * 组件卸载时清理
+ */
+onUnmounted(() => {
+  console.log('ChatWindow组件即将卸载')
+  
+  // 移除消息事件监听器
+  messageService.off('new_message', handleNewMessage)
+  messageService.off('message_sending', handleMessageSending)
+  messageService.off('message_sent', handleMessageSent)
+  messageService.off('messages_read', handleMessagesRead)
+})
+
+/**
+ * 监听联系人ID变化
+ */
+watch(() => props.contactId, async (newContactId, oldContactId) => {
+  if (newContactId && newContactId !== oldContactId) {
+    console.log('联系人ID已变化:', oldContactId, '->', newContactId)
+    
+    // 清空当前消息
+    messages.value = []
+    currentPage.value = 1
+    hasMoreHistory.value = true
+    
+    // 更新联系人信息
+    contactInfo.value.id = newContactId
+    
+    // 重新加载数据
+    await loadContactInfo()
+    await loadChatHistory()
+    await markMessagesAsRead()
+    
+    // 滚动到底部
+    await nextTick()
+    scrollToBottom()
+  }
+})
+
+// 已在下方定义了setupMessageEventListeners函数，删除此重复声明
+
+/**
+ * 处理收到新消息
+ */
+const handleNewMessage = ({ message, conversationId }) => {
+  // 检查是否是当前会话的消息 - 使用userId而不是_id
+  const currentUserId = userStore.user?.userId || userStore.user?._id
+  const currentConversationId = generateConversationId(currentUserId, props.contactId)
+  console.log('收到新消息事件:', { conversationId, currentConversationId, currentUserId, contactId: props.contactId, message })
+  
+  if (conversationId === currentConversationId) {
+    console.log('✅ 是当前会话的消息，即将显示')
+    
+    // 检查是否已经存在相同消息（防止重复）
+    const existingMessage = messages.value.find(m => 
+      m.id === (message.id || message.messageId) || 
+      (m.content === message.content && Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) < 1000)
+    )
+    
+    if (existingMessage) {
+      console.log('⚠️ 消息已存在，跳过重复添加')
+      return
+    }
+    
+    // 添加到消息列表
+    const newMessage = {
+      id: message.id || message.messageId || `msg_${Date.now()}`,
+      content: message.content,
+      sender: message.senderName,
+      avatar: message.senderAvatar,
+      timestamp: message.timestamp || new Date().toISOString(),
+      isSent: false,
+      status: 'delivered'
+    }
+    
+    console.log('✨ 添加新消息到UI:', newMessage)
+    messages.value.push(newMessage)
+    
+    // 立即滚动到底部
+    nextTick(() => {
+      scrollToBottom()
+      console.log('⬇️ 已滚动到底部')
+    })
+    
+    // 自动标记为已读
+    setTimeout(() => {
+      markMessagesAsRead()
+    }, 1000)
+  } else {
+    console.log('❌ 不是当前会话的消息，忽略')
+  }
+}
+
+/**
+ * 处理消息发送中
+ */
+const handleMessageSending = ({ message, conversationId }) => {
+  // 检查是否是当前会话的消息 - 使用userId而不是_id
+  const currentUserId = userStore.user?.userId || userStore.user?._id
+  const currentConversationId = generateConversationId(currentUserId, props.contactId)
+  console.log('消息发送中:', { conversationId, currentConversationId, message })
+  if (conversationId === currentConversationId) {
+    console.log('消息发送中:', message)
+    
+    // 添加到消息列表
+    messages.value.push({
+      id: message.tempId || message.id,
+      content: message.content,
+      timestamp: message.timestamp,
+      isSent: true,
+      status: 'sending'
+    })
+    
+    // 滚动到底部
+    nextTick(() => {
+      scrollToBottom()
+    })
+  }
+}
+
+/**
+ * 处理消息发送成功
+ */
+const handleMessageSent = ({ messageId, conversationId }) => {
+  // 检查是否是当前会话的消息 - 使用userId而不是_id
+  const currentUserId = userStore.user?.userId || userStore.user?._id
+  const currentConversationId = generateConversationId(currentUserId, props.contactId)
+  console.log('消息发送成功:', { conversationId, currentConversationId, messageId })
+  if (conversationId === currentConversationId) {
+    console.log('消息发送成功:', messageId)
+    
+    // 更新消息状态
+    const message = messages.value.find(m => m.id === messageId || m.id.toString().startsWith('temp_'))
+    if (message) {
+      message.id = messageId
+      message.status = 'sent'
+    }
+  }
+}
+
+/**
+ * 处理消息已读
+ */
+const handleMessagesRead = ({ messageIds, conversationId }) => {
+  // 检查是否是当前会话的消息 - 使用userId而不是_id
+  const currentUserId = userStore.user?.userId || userStore.user?._id
+  const currentConversationId = generateConversationId(currentUserId, props.contactId)
+  console.log('消息已读:', { conversationId, currentConversationId, messageIds })
+  if (conversationId === currentConversationId) {
+    console.log('消息已读:', messageIds)
+    
+    // 更新消息状态
+    messages.value.forEach(message => {
+      if (message.isSent && (!messageIds || messageIds.includes(message.id))) {
+        message.status = 'read'
+      }
+    })
+  }
+}
+
+/**
+ * 加载联系人信息
+ */
+const loadContactInfo = async () => {
+  try {
+    const userInfo = await userCacheService.getUserInfo(props.contactId)
+    if (userInfo) {
+      contactInfo.value = {
+        id: props.contactId,
+        name: userInfo.profile?.displayName || userInfo.username || props.contactName,
+        avatar: userInfo.profile?.avatar || props.contactAvatar,
+        isOnline: userInfo.isOnline || props.isOnline
+      }
+      console.log('联系人信息已加载:', contactInfo.value)
+    }
+  } catch (error) {
+    console.error('加载联系人信息失败:', error)
+  }
+}
+
+/**
+ * 加载聊天历史
+ */
+const loadChatHistory = async () => {
+  try {
+    isLoadingHistory.value = true
+    console.log('加载聊天历史:', props.contactId)
+    
+    const result = await messageService.getChatHistory(props.contactId, 1, 50)
+    if (result.success) {
+      messages.value = result.data.messages.map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.isSent ? null : (msg.senderName || contactInfo.value.name),
+        avatar: msg.isSent ? userAvatar.value : (msg.senderAvatar || contactInfo.value.avatar),
+        timestamp: msg.timestamp,
+        isSent: msg.isSent,
+        status: msg.status
+      }))
+      
+      hasMoreHistory.value = result.data.pagination.hasMore
+      console.log(`聊天历史已加载，共${messages.value.length}条消息`)
+    }
+  } catch (error) {
+    console.error('加载聊天历史失败:', error)
+  } finally {
+    isLoadingHistory.value = false
+  }
+}
+
+/**
+ * 标记消息为已读
+ */
+const markMessagesAsRead = async () => {
+  try {
+    await messageService.markMessagesAsRead(props.contactId)
+  } catch (error) {
+    console.error('标记消息已读失败:', error)
+  }
+}
+
+/**
+ * 生成会话ID
+ */
+const generateConversationId = (userId1, userId2) => {
+  const ids = [userId1, userId2].sort()
+  return `${ids[0]}_${ids[1]}`
 }
 
 // 格式化时间
@@ -356,8 +590,80 @@ const startInputResize = (e) => {
   document.body.style.userSelect = 'none'
 }
 
+/**
+ * 处理消息发送失败
+ */
+const handleMessageFailed = ({ message, conversationId, error }) => {
+  // 检查是否是当前会话的消息 - 使用userId而不是_id
+  const currentUserId = userStore.user?.userId || userStore.user?._id
+  const currentConversationId = generateConversationId(currentUserId, props.contactId)
+  console.log('消息发送失败:', { conversationId, currentConversationId, message, error })
+  if (conversationId === currentConversationId) {
+    console.error('消息发送失败:', error)
+    
+    // 更新消息状态为失败
+    const existingMessage = messages.value.find(m => 
+      m.tempId === message.tempId || 
+      m.id === message.id ||
+      (m.content === message.content && Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) < 1000)
+    )
+    if (existingMessage) {
+      existingMessage.status = 'failed'
+    }
+  }
+}
+
+/**
+ * 设置消息事件监听器
+ */
+const setupMessageEventListeners = () => {
+  console.log('设置消息事件监听器')
+  
+  // 清理可能存在的旧监听器（防止重复）
+  messageService.off('new_message', handleNewMessage)
+  messageService.off('message_sending', handleMessageSending)
+  messageService.off('message_sent', handleMessageSent)
+  messageService.off('message_failed', handleMessageFailed)
+  messageService.off('messages_read', handleMessagesRead)
+  
+  // 设置新的监听器
+  messageService.on('new_message', handleNewMessage)
+  messageService.on('message_sending', handleMessageSending)
+  messageService.on('message_sent', handleMessageSent)
+  messageService.on('message_failed', handleMessageFailed)
+  messageService.on('messages_read', handleMessagesRead)
+  
+  console.log('消息事件监听器设置完成')
+}
+
+// 已在上方定义了消息处理函数，删除此重复声明
+
+// 组件挂载时设置事件监听器
+onMounted(async () => {
+  console.log('ChatWindow组件已挂载，设置事件监听器')
+  
+  // 设置消息事件监听器
+  setupMessageEventListeners()
+  
+  // 初始化数据
+  if (props.contactId) {
+    await loadContactInfo()
+    await loadChatHistory()
+    await markMessagesAsRead()
+  }
+})
+
 // 组件卸载时的清理
 onUnmounted(() => {
+  console.log('ChatWindow组件即将卸载，清理事件监听器')
+  
+  // 清理消息事件监听器
+  messageService.off('new_message', handleNewMessage)
+  messageService.off('message_sending', handleMessageSending)
+  messageService.off('message_sent', handleMessageSent)
+  messageService.off('message_failed', handleMessageFailed)
+  
+  // 清理DOM相关
   document.body.style.cursor = 'default'
   document.body.style.userSelect = 'auto'
 })

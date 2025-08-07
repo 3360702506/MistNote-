@@ -359,6 +359,179 @@ ipcMain.handle('cache-user-avatar', async (event, userId, avatarUrl) => {
   }
 })
 
+// 聊天消息相关IPC处理器
+// 使用全局变量防止重复注册
+if (!global.chatIpcHandlersRegistered) {
+  console.log('注册聊天消息IPC处理器...');
+  
+  // 标记已注册
+  global.chatIpcHandlersRegistered = true;
+  
+  // 注册聊天消息相关的IPC处理器
+  ipcMain.handle('save-chat-message', async (event, userId, messageData) => {
+  try {
+    if (clientUserDataManager && databaseManager) {
+      const dbPath = clientUserDataManager.getUserDatabasePath(userId)
+      const db = await databaseManager.getDatabase(dbPath)
+      
+      // 确保chat_messages表存在
+      const createTableSQL = `
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          server_message_id TEXT,
+          contact_id TEXT NOT NULL,
+          message_type TEXT DEFAULT 'text',
+          content TEXT NOT NULL,
+          timestamp TEXT NOT NULL,
+          is_sent INTEGER DEFAULT 0,
+          is_read INTEGER DEFAULT 0,
+          sync_status TEXT DEFAULT 'pending',
+          local_only INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `
+      await db.execAsync(createTableSQL)
+      console.log('chat_messages表创建/验证成功')
+      
+      const sql = `
+        INSERT OR REPLACE INTO chat_messages (
+          server_message_id, contact_id, message_type, content, 
+          timestamp, is_sent, is_read, sync_status, local_only
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `
+      
+      const result = await db.runAsync(sql, [
+        messageData.serverMessageId,
+        messageData.contactId,
+        messageData.messageType,
+        messageData.content,
+        messageData.timestamp,
+        messageData.isSent,
+        messageData.isRead,
+        messageData.syncStatus,
+        messageData.localOnly
+      ])
+      
+      return { success: true, messageId: result.lastID }
+    }
+    return { success: false, error: '用户数据管理器未初始化' }
+  } catch (error) {
+    console.error('保存聊天消息失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+ipcMain.handle('get-chat-messages', async (event, userId, contactId, limit = 50, offset = 0) => {
+  try {
+    if (clientUserDataManager && databaseManager) {
+      const dbPath = clientUserDataManager.getUserDatabasePath(userId)
+      const db = await databaseManager.getDatabase(dbPath)
+      
+      // 确保chat_messages表存在
+      const createTableSQL = `
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          server_message_id TEXT,
+          contact_id TEXT NOT NULL,
+          message_type TEXT DEFAULT 'text',
+          content TEXT NOT NULL,
+          timestamp TEXT NOT NULL,
+          is_sent INTEGER DEFAULT 0,
+          is_read INTEGER DEFAULT 0,
+          sync_status TEXT DEFAULT 'pending',
+          local_only INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `
+      await db.execAsync(createTableSQL)
+      
+      const sql = `
+        SELECT * FROM chat_messages 
+        WHERE contact_id = ? 
+        ORDER BY timestamp DESC 
+        LIMIT ? OFFSET ?
+      `
+      
+      const messages = await db.allAsync(sql, [contactId, limit, offset])
+      return messages.reverse() // 返回时间正序
+    }
+    return { success: false, error: '用户数据管理器未初始化' }
+  } catch (error) {
+    console.error('获取聊天消息失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+ipcMain.handle('mark-messages-read', async (event, userId, contactId, messageIds = null) => {
+  try {
+    if (clientUserDataManager && databaseManager) {
+      const dbPath = clientUserDataManager.getUserDatabasePath(userId)
+      const db = await databaseManager.getDatabase(dbPath)
+      
+      let sql
+      let params
+      
+      if (messageIds && messageIds.length > 0) {
+        const placeholders = messageIds.map(() => '?').join(',')
+        sql = `
+          UPDATE chat_messages 
+          SET is_read = 1 
+          WHERE contact_id = ? AND server_message_id IN (${placeholders})
+        `
+        params = [contactId, ...messageIds]
+      } else {
+        sql = `
+          UPDATE chat_messages 
+          SET is_read = 1 
+          WHERE contact_id = ? AND is_sent = 0 AND is_read = 0
+        `
+        params = [contactId]
+      }
+      
+      const result = await db.runAsync(sql, params)
+      return { success: true, updatedCount: result.changes }
+    }
+    return { success: false, error: '用户数据管理器未初始化' }
+  } catch (error) {
+    console.error('标记消息已读失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+ipcMain.handle('get-unread-count', async (event, userId, contactId = null) => {
+  try {
+    if (clientUserDataManager && databaseManager) {
+      const dbPath = clientUserDataManager.getUserDatabasePath(userId)
+      const db = await databaseManager.getDatabase(dbPath)
+      
+      let sql
+      let params
+      
+      if (contactId) {
+        sql = `
+          SELECT COUNT(*) as count FROM chat_messages 
+          WHERE contact_id = ? AND is_sent = 0 AND is_read = 0
+        `
+        params = [contactId]
+      } else {
+        sql = `
+          SELECT COUNT(*) as count FROM chat_messages 
+          WHERE is_sent = 0 AND is_read = 0
+        `
+        params = []
+      }
+      
+      const result = await db.getAsync(sql, params)
+      return result.count
+    }
+    return 0
+  } catch (error) {
+    console.error('获取未读消息数失败:', error)
+    return 0
+  }
+  })
+}
+
 app.on('before-quit', () => {
   // 关闭所有数据库连接
   if (databaseManager) {
@@ -606,35 +779,9 @@ ipcMain.handle('get-user-info-locally', async (event, userId) => {
   }
 })
 
-// 保存聊天消息
-ipcMain.handle('save-chat-message', async (event, userId, messageData) => {
-  try {
-    if (clientUserDataManager && databaseManager) {
-      const dbPath = clientUserDataManager.getUserDatabasePath(userId)
-      const result = await databaseManager.saveChatMessage(dbPath, messageData)
-      return { success: true, result }
-    }
-    return { success: false, error: '用户数据管理器未初始化' }
-  } catch (error) {
-    console.error('保存聊天消息失败:', error)
-    return { success: false, error: error.message }
-  }
-})
+// 此处的save-chat-message处理器已移动到上面的条件注册区域
 
-// 获取聊天消息
-ipcMain.handle('get-chat-messages', async (event, userId, contactId, limit, offset) => {
-  try {
-    if (clientUserDataManager && databaseManager) {
-      const dbPath = clientUserDataManager.getUserDatabasePath(userId)
-      const messages = await databaseManager.getChatMessages(dbPath, userId, contactId, limit, offset)
-      return { success: true, messages }
-    }
-    return { success: false, error: '用户数据管理器未初始化' }
-  } catch (error) {
-    console.error('获取聊天消息失败:', error)
-    return { success: false, error: error.message }
-  }
-})
+// 此处的get-chat-messages处理器已移动到上面的条件注册区域
 
 // 保存联系人
 ipcMain.handle('save-contact', async (event, userId, contactData) => {

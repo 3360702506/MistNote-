@@ -10,9 +10,11 @@
     <div class="main-content">
       <!-- 聊天窗口 -->
       <ChatWindow
-        v-if="selectedChatId"
-        :contact-name="getSelectedChatName()"
-        :is-online="getSelectedChatOnlineStatus()"
+        v-if="selectedChatId && selectedChatData"
+        :contact-id="selectedChatData.userId || selectedChatData.id"
+        :contact-name="selectedChatData.name"
+        :contact-avatar="selectedChatData.avatar"
+        :is-online="selectedChatData.online"
       />
 
       <!-- 占位符 -->
@@ -31,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Sidebar from '../components/Sidebar.vue'
 import ChatList from '../components/ChatList.vue'
@@ -39,30 +41,19 @@ import ChatWindow from '../components/ChatWindow.vue'
 
 const router = useRouter()
 const selectedChatId = ref(null)
+const selectedChatData = ref(null)
 
 const goBack = () => {
   router.push('/')
 }
 
-const handleChatSelect = (chatId) => {
-  selectedChatId.value = chatId
+const handleChatSelect = (chatData) => {
+  console.log('选择聊天:', chatData)
+  selectedChatId.value = chatData.id
+  selectedChatData.value = chatData
 }
 
-// 模拟聊天数据
-const chatData = {
-  1: { name: '谢智贤', isOnline: true },
-  2: { name: '张三', isOnline: false },
-  3: { name: '李四', isOnline: true },
-  4: { name: '王五', isOnline: false }
-}
-
-const getSelectedChatName = () => {
-  return chatData[selectedChatId.value]?.name || '未知联系人'
-}
-
-const getSelectedChatOnlineStatus = () => {
-  return chatData[selectedChatId.value]?.isOnline || false
-}
+// 注意：现在使用真实的聊天数据，不再需要模拟数据
 </script>
 
 <style scoped>

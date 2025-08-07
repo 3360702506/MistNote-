@@ -18,6 +18,7 @@ const chatRoutes = require('./routes/chat');
 const contactRoutes = require('./routes/contact');
 const friendRoutes = require('./routes/friends');
 const uploadRoutes = require('./routes/upload');
+const messageRoutes = require('./routes/messages');
 
 const app = express();
 const server = http.createServer(app);
@@ -58,6 +59,7 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/messages', messageRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

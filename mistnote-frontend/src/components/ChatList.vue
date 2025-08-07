@@ -331,7 +331,14 @@ const emit = defineEmits(['chat-select'])
 const selectChat = (chatId) => {
   if (!isDragging.value) {
     activeChatId.value = chatId
-    emit('chat-select', chatId)
+    // 查找完整的聊天数据对象
+    const chatData = chatList.value.find(chat => chat.id === chatId)
+    if (chatData) {
+      console.log('选择聊天数据:', chatData)
+      emit('chat-select', chatData)
+    } else {
+      console.error('未找到聊天数据:', chatId)
+    }
   }
 }
 

@@ -66,7 +66,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getUserCacheInfo: (userId) => ipcRenderer.invoke('get-user-cache-info', userId),
   saveUserCacheInfo: (userId, cacheData) => ipcRenderer.invoke('save-user-cache-info', userId, cacheData),
   getUserAvatar: (userId) => ipcRenderer.invoke('get-user-avatar', userId),
-  cacheUserAvatar: (userId, avatarUrl) => ipcRenderer.invoke('cache-user-avatar', userId, avatarUrl)
+  cacheUserAvatar: (userId, avatarUrl) => ipcRenderer.invoke('cache-user-avatar', userId, avatarUrl),
+
+  // 聊天消息相关
+  saveChatMessage: (userId, messageData) => ipcRenderer.invoke('save-chat-message', userId, messageData),
+  getChatMessages: (userId, contactId, limit, offset) => ipcRenderer.invoke('get-chat-messages', userId, contactId, limit, offset),
+  markMessagesRead: (userId, contactId, messageIds) => ipcRenderer.invoke('mark-messages-read', userId, contactId, messageIds),
+  getUnreadCount: (userId, contactId) => ipcRenderer.invoke('get-unread-count', userId, contactId)
 })
 
 // --------- Preload scripts loading ---------
