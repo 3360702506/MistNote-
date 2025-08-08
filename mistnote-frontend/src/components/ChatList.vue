@@ -211,6 +211,7 @@ import { useUserStore } from '@/stores/user'
 import socketService from '@/services/socket'
 import messageService from '@/services/messageService'
 import { QSearchBox, QListItem, QModal, QContextMenu } from './qqnt'
+import avatarCacheService from '@/services/avatarCacheService'
 
 const userStore = useUserStore()
 const message = useMessage()
@@ -673,17 +674,24 @@ const initializeChatList = async () => {
         const friendIds = data.data.map(friend => friend.userId || friend._id)
         await userCacheService.preloadUsers(friendIds)
         
+        // 预加载所有好友的头像
+        console.log('预加载好友头像...')
+        await avatarCacheService.preloadAvatars(friendIds)
+        
         // 将好友转换为聊天项（使用缓存的用户信息）
         const friendChats = await Promise.all(data.data.map(async (friend) => {
           try {
             // 从缓存获取用户信息
             const cachedUserInfo = await userCacheService.getUserInfo(friend.userId || friend._id)
             
+            // 从头像缓存服务获取头像
+            const avatarPath = await avatarCacheService.getUserAvatar(friend.userId || friend._id)
+            
             return {
               id: friend._id,
               userId: friend.userId,
               name: cachedUserInfo?.profile?.displayName || friend.profile?.displayName || friend.userId,
-              avatar: cachedUserInfo?.profile?.avatar || friend.profile?.avatar || '/default-avatar.png',
+              avatar: avatarPath,
               lastMessage: '开始聊天吧！',
               time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
               unreadCount: 0,
@@ -700,7 +708,7 @@ const initializeChatList = async () => {
               id: friend._id,
               userId: friend.userId,
               name: friend.profile?.displayName || friend.userId,
-              avatar: friend.profile?.avatar || '/default-avatar.png',
+              avatar: await avatarCacheService.getUserAvatar(friend.userId),
               lastMessage: '开始聊天吧！',
               time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
               unreadCount: 0,
@@ -731,12 +739,28 @@ const initializeChatList = async () => {
 // 清理全局事件监听器
 let cleanupGlobalListeners = null
 
+// 防重复请求标志
+let isInitializing = false
+let lastInitTime = 0
+const MIN_INIT_INTERVAL = 5000 // 最小初始化间隔5秒
+
 // 生命周期
 onMounted(() => {
   console.log('ChatList组件已挂载')
   
+  // 防止频繁初始化
+  const now = Date.now()
+  if (isInitializing || (now - lastInitTime < MIN_INIT_INTERVAL)) {
+    console.log('跳过初始化，避免频繁请求')
+    return
+  }
+  
   // 初始化聊天列表（获取好友列表并同步）
-  initializeChatList()
+  isInitializing = true
+  lastInitTime = now
+  initializeChatList().finally(() => {
+    isInitializing = false
+  })
   
   // 设置全局事件监听器
   const cleanup = setupGlobalEventListeners()

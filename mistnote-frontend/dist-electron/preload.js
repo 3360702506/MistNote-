@@ -60,7 +60,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveChatMessage: (userId, messageData) => ipcRenderer.invoke("save-chat-message", userId, messageData),
   getChatMessages: (userId, contactId, limit, offset) => ipcRenderer.invoke("get-chat-messages", userId, contactId, limit, offset),
   markMessagesRead: (userId, contactId, messageIds) => ipcRenderer.invoke("mark-messages-read", userId, contactId, messageIds),
-  getUnreadCount: (userId, contactId) => ipcRenderer.invoke("get-unread-count", userId, contactId)
+  getUnreadCount: (userId, contactId) => ipcRenderer.invoke("get-unread-count", userId, contactId),
+  // 其他用户头像管理
+  saveOtherUserAvatar: (userId, fileName, fileBuffer) => ipcRenderer.invoke("save-other-user-avatar", userId, fileName, fileBuffer),
+  saveOtherUserAvatarInfo: (userId, avatarData) => ipcRenderer.invoke("save-other-user-avatar-info", userId, avatarData),
+  getUserAvatarInfo: (userId) => ipcRenderer.invoke("get-user-avatar-info", userId),
+  checkFileExists: (filePath) => ipcRenderer.invoke("check-file-exists", filePath),
+  cleanExpiredAvatars: (expiryTime) => ipcRenderer.invoke("clean-expired-avatars", expiryTime)
 });
 function domReady(condition = ["complete", "interactive"]) {
   return new Promise((resolve) => {

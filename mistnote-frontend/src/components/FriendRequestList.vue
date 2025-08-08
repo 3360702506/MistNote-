@@ -15,7 +15,7 @@
       <div v-else class="requests-container">
         <div v-for="request in requests" :key="request._id" class="request-item">
           <div class="avatar">
-            <img :src="request.sender?.profile?.avatar || '/default-avatar.png'" alt="avatar" />
+            <img :src="getAvatarSrc(request)" alt="avatar" />
           </div>
           <div class="info">
             <div class="name">{{ request.sender?.profile?.displayName || request.sender?.username || '未知用户' }}</div>
@@ -36,12 +36,53 @@ import { ref, onMounted, onUnmounted, defineEmits } from 'vue';
 import { NButton, NScrollbar, NIcon, NSpin, useMessage } from 'naive-ui';
 import { MailOutline as MailOutlineIcon } from '@vicons/ionicons5';
 import { useUserStore } from '@/stores/user';
+import avatarCacheService from '@/services/avatarCacheService';
 
 const requests = ref([]);
 const loading = ref(true);
 const userStore = useUserStore();
 const message = useMessage();
 const emit = defineEmits(['show-message', 'friend-added']);
+const avatarMap = ref({}); // userId -> local avatar path
+
+// 获取请求项头像
+const getAvatarSrc = (request) => {
+  const uid = request?.sender?.userId || request?.sender?._id;
+  return avatarMap.value[uid] || request?.sender?.profile?.avatar || '/default-avatar.png';
+};
+
+// 解析并预加载头像
+const resolveAvatars = async (list) => {
+  if (!Array.isArray(list)) return;
+  const userIds = Array.from(
+    new Set(
+      list
+        .map(r => r?.sender?.userId || r?.sender?._id)
+        .filter(Boolean)
+    )
+  );
+  if (userIds.length === 0) return;
+  try {
+    // 预加载以减少闪烁
+    await avatarCacheService.preloadAvatars(userIds);
+    // 分别获取本地路径
+    await Promise.all(userIds.map(async (uid) => {
+      const p = await avatarCacheService.getUserAvatar(uid).catch(() => null);
+      if (p) {
+        avatarMap.value = { ...avatarMap.value, [uid]: p };
+      }
+    }));
+  } catch (e) {
+    console.warn('预加载头像失败', e);
+  }
+};
+
+// 监听头像更新事件，局部刷新
+const onAvatarUpdated = (e) => {
+  const { userId, avatarPath } = e.detail || {};
+  if (!userId || !avatarPath) return;
+  avatarMap.value = { ...avatarMap.value, [userId]: avatarPath };
+};
 
 // 获取好友请求列表
 const fetchFriendRequests = async () => {
@@ -57,6 +98,8 @@ const fetchFriendRequests = async () => {
       const data = await response.json();
       if (data.success) {
         requests.value = data.data.received || [];
+        // 请求成功后解析头像
+        resolveAvatars(requests.value);
       }
     }
   } catch (error) {
@@ -116,6 +159,8 @@ const setupSocketListeners = () => {
       createdAt: data.createdAt
     });
     message.info(`收到来自 ${data.sender.profile?.displayName || data.sender.userId} 的好友请求`);
+    // 新增请求的头像也解析
+    resolveAvatars([{ sender: data.sender }]);
   });
   
   // 监听好友请求被接受
@@ -158,10 +203,12 @@ const refreshRequests = () => {
 onMounted(() => {
   fetchFriendRequests();
   setupSocketListeners();
+  window.addEventListener('avatar-updated', onAvatarUpdated);
 });
 
 onUnmounted(() => {
   cleanupSocketListeners();
+  window.removeEventListener('avatar-updated', onAvatarUpdated);
 });
 
 // 暴露方法供父组件调用

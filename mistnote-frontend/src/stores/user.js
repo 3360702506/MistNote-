@@ -1,6 +1,7 @@
 // 用户状态管理
 import { defineStore } from 'pinia';
 import { authAPI, userAPI } from '@/services/api';
+import api from '@/services/api';
 import socketService from '@/services/socket';
 
 export const useUserStore = defineStore('user', {
@@ -417,7 +418,7 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // 上传并保存头像
+    // 上传并保存头像（本地和服务器双存）
     async uploadAvatar(file) {
       try {
         const userId = this.user?.userId || this.user?.profile?.userId;
@@ -430,7 +431,26 @@ export const useUserStore = defineStore('user', {
         const fileExtension = file.name.split('.').pop()
         const fileName = `avatar_${timestamp}.${fileExtension}`
         
-        // 将文件转换为Buffer
+        // 1. 先上传到服务器
+        let serverAvatarUrl = null;
+        try {
+          const formData = new FormData();
+          formData.append('avatar', file);
+          
+          const serverResponse = await api.post('/upload/avatar', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+          
+          if (serverResponse.data.success) {
+            serverAvatarUrl = serverResponse.data.data.avatarUrl;
+            console.log('头像已上传到服务器:', serverAvatarUrl);
+          }
+        } catch (serverError) {
+          console.error('上传到服务器失败，但继续保存到本地:', serverError);
+          // 服务器上传失败不影响本地保存
+        }
+        
+        // 2. 保存到本地
         const arrayBuffer = await file.arrayBuffer()
         const fileBuffer = new Uint8Array(arrayBuffer)
         
@@ -443,10 +463,12 @@ export const useUserStore = defineStore('user', {
         )
         
         if (saveResult.success) {
-          // 保存头像信息到数据库
+          // 保存头像信息到本地数据库
           const avatarData = {
             filename: fileName,
-            path: saveResult.filePath
+            path: saveResult.filePath,
+            serverUrl: serverAvatarUrl, // 记录服务器URL
+            uploadTime: new Date().toISOString()
           }
           
           const dbResult = await window.electronAPI.saveAvatarInfo(userId, avatarData)
@@ -455,19 +477,36 @@ export const useUserStore = defineStore('user', {
             // 更新用户头像路径（支持多种用户对象结构）
             if (this.user.profile) {
               this.user.profile.avatar = saveResult.filePath
+              this.user.profile.serverAvatar = serverAvatarUrl // 记录服务器头像URL
             } else {
               // 如果没有profile对象，创建一个
-              this.user.profile = { avatar: saveResult.filePath }
+              this.user.profile = { 
+                avatar: saveResult.filePath,
+                serverAvatar: serverAvatarUrl
+              }
             }
             
             // 也更新直接的avatar属性
             this.user.avatar = saveResult.filePath
+            this.user.serverAvatar = serverAvatarUrl
             
             // 更新localStorage
             localStorage.setItem('user', JSON.stringify(this.user))
             
-            console.log('头像上传成功:', saveResult.filePath)
-            return { success: true, avatarPath: saveResult.filePath }
+            // 通过Socket通知其他用户头像更新
+            if (serverAvatarUrl && window.socket?.connected) {
+              window.socket.emit('avatar-updated', {
+                userId: userId,
+                avatarUrl: serverAvatarUrl
+              });
+            }
+            
+            console.log('头像上传成功 - 本地:', saveResult.filePath, '服务器:', serverAvatarUrl)
+            return { 
+              success: true, 
+              avatarPath: saveResult.filePath,
+              serverUrl: serverAvatarUrl
+            }
           } else {
             throw new Error('保存头像信息到数据库失败')
           }

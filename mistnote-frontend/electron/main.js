@@ -108,7 +108,7 @@ async function createLoginWindow() {
 async function createMainWindow() {
   // 根据环境选择正确的图标路径
   const iconPath = process.env.VITE_DEV_SERVER_URL 
-    ? path.join(__dirname, '../../public/logo.png')
+    ? path.join(__dirname, '../public/logo.png')
     : path.join(process.env.DIST, 'logo.png')
   
   mainWin = new BrowserWindow({
@@ -710,6 +710,161 @@ ipcMain.handle('get-unread-count', async (event, userId, contactId = null) => {
     console.error('获取未读消息数失败:', error)
     return 0
   }
+  })
+
+  // 保存其他用户的头像到本地
+  ipcMain.handle('save-other-user-avatar', async (event, userId, fileName, fileBuffer) => {
+    try {
+      if (clientUserDataManager) {
+        const userDataPath = clientUserDataManager.getUserDataPath(currentUserId)
+        const avatarCachePath = path.join(userDataPath, 'avatar_cache')
+        
+        // 确保头像缓存目录存在
+        if (!fs.existsSync(avatarCachePath)) {
+          fs.mkdirSync(avatarCachePath, { recursive: true })
+        }
+        
+        // 为其他用户创建子目录
+        const userAvatarPath = path.join(avatarCachePath, userId)
+        if (!fs.existsSync(userAvatarPath)) {
+          fs.mkdirSync(userAvatarPath, { recursive: true })
+        }
+        
+        const filePath = path.join(userAvatarPath, fileName)
+        fs.writeFileSync(filePath, Buffer.from(fileBuffer))
+        
+        return { success: true, filePath }
+      }
+      return { success: false, error: '用户数据管理器未初始化' }
+    } catch (error) {
+      console.error('保存其他用户头像失败:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  // 保存其他用户头像信息到数据库
+  ipcMain.handle('save-other-user-avatar-info', async (event, otherUserId, avatarData) => {
+    try {
+      if (clientUserDataManager && databaseManager && currentUserId) {
+        const dbPath = clientUserDataManager.getUserDatabasePath(currentUserId)
+        const db = await databaseManager.getDatabase(dbPath)
+        
+        // 创建其他用户头像缓存表
+        const createTableSQL = `
+          CREATE TABLE IF NOT EXISTS other_user_avatars (
+            user_id TEXT PRIMARY KEY,
+            filename TEXT,
+            path TEXT,
+            server_url TEXT,
+            download_time TEXT,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `
+        await db.execAsync(createTableSQL)
+        
+        const sql = `
+          INSERT OR REPLACE INTO other_user_avatars 
+          (user_id, filename, path, server_url, download_time, updated_at)
+          VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `
+        
+        await db.runAsync(sql, [
+          otherUserId,
+          avatarData.filename,
+          avatarData.path,
+          avatarData.serverUrl,
+          avatarData.downloadTime
+        ])
+        
+        return { success: true }
+      }
+      return { success: false, error: '数据库未初始化' }
+    } catch (error) {
+      console.error('保存其他用户头像信息失败:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  // 获取其他用户的头像信息
+  ipcMain.handle('get-user-avatar-info', async (event, userId) => {
+    try {
+      if (clientUserDataManager && databaseManager && currentUserId) {
+        const dbPath = clientUserDataManager.getUserDatabasePath(currentUserId)
+        const db = await databaseManager.getDatabase(dbPath)
+        
+        // 先尝试从其他用户头像表获取
+        const sql = `SELECT * FROM other_user_avatars WHERE user_id = ?`
+        const result = await db.getAsync(sql, [userId])
+        
+        if (result) {
+          return { success: true, avatar: result }
+        }
+        
+        // 如果是当前用户，从user_avatars表获取
+        if (userId === currentUserId) {
+          const currentUserSql = `
+            SELECT * FROM user_avatars 
+            WHERE is_current = 1 
+            ORDER BY upload_time DESC 
+            LIMIT 1
+          `
+          const currentUserResult = await db.getAsync(currentUserSql)
+          if (currentUserResult) {
+            return { success: true, avatar: currentUserResult }
+          }
+        }
+        
+        return { success: false, error: '未找到头像信息' }
+      }
+      return { success: false, error: '数据库未初始化' }
+    } catch (error) {
+      console.error('获取用户头像信息失败:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  // 检查文件是否存在
+  ipcMain.handle('check-file-exists', async (event, filePath) => {
+    try {
+      return fs.existsSync(filePath)
+    } catch (error) {
+      console.error('检查文件存在失败:', error)
+      return false
+    }
+  })
+
+  // 清理过期的头像缓存
+  ipcMain.handle('clean-expired-avatars', async (event, expiryTime) => {
+    try {
+      if (clientUserDataManager && currentUserId) {
+        const userDataPath = clientUserDataManager.getUserDataPath(currentUserId)
+        const avatarCachePath = path.join(userDataPath, 'avatar_cache')
+        
+        if (fs.existsSync(avatarCachePath)) {
+          const now = Date.now()
+          const cleanupDir = (dirPath) => {
+            const files = fs.readdirSync(dirPath)
+            files.forEach(file => {
+              const filePath = path.join(dirPath, file)
+              const stat = fs.statSync(filePath)
+              if (stat.isFile() && (now - stat.mtimeMs > expiryTime)) {
+                fs.unlinkSync(filePath)
+                console.log('删除过期头像:', filePath)
+              } else if (stat.isDirectory()) {
+                cleanupDir(filePath)
+              }
+            })
+          }
+          cleanupDir(avatarCachePath)
+        }
+        
+        return { success: true }
+      }
+      return { success: false, error: '用户数据管理器未初始化' }
+    } catch (error) {
+      console.error('清理过期头像失败:', error)
+      return { success: false, error: error.message }
+    }
   })
 }
 

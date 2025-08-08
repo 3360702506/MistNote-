@@ -20,7 +20,7 @@
       <div v-else class="requests-container">
         <div v-for="request in requests" :key="request._id" class="notification-item">
           <div class="item-avatar">
-            <img :src="request.sender?.profile?.avatar || '/default-avatar.png'" 
+            <img :src="getAvatarSrc(request)" 
                  :alt="request.sender?.profile?.displayName || '用户'" />
           </div>
           
@@ -67,6 +67,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, defineEmits } from 'vue'
 import { useUserStore } from '@/stores/user'
+import avatarCacheService from '@/services/avatarCacheService'
 
 const requests = ref([])
 const loading = ref(false)
@@ -76,6 +77,37 @@ const lastFetchTime = ref(0) // 上次请求时间
 const FETCH_COOLDOWN = 2000 // 请求冷却时间（毫秒）
 const userStore = useUserStore()
 const emit = defineEmits(['show-message', 'friend-added'])
+
+// 本地头像映射
+const avatarMap = ref({}) // userId -> avatarPath
+
+const getAvatarSrc = (request) => {
+  const uid = request?.sender?.userId || request?.sender?._id
+  return avatarMap.value[uid] || request?.sender?.profile?.avatar || '/default-avatar.png'
+}
+
+const resolveAvatars = async (list) => {
+  if (!Array.isArray(list)) return
+  const userIds = Array.from(new Set(
+    list.map(r => r?.sender?.userId || r?.sender?._id).filter(Boolean)
+  ))
+  if (userIds.length === 0) return
+  try {
+    await avatarCacheService.preloadAvatars(userIds)
+    await Promise.all(userIds.map(async (uid) => {
+      const p = await avatarCacheService.getUserAvatar(uid).catch(() => null)
+      if (p) avatarMap.value = { ...avatarMap.value, [uid]: p }
+    }))
+  } catch (err) {
+    console.warn('预加载头像失败', err)
+  }
+}
+
+const onAvatarUpdated = (e) => {
+  const { userId, avatarPath } = e.detail || {}
+  if (!userId || !avatarPath) return
+  avatarMap.value = { ...avatarMap.value, [userId]: avatarPath }
+}
 
 // 格式化时间
 const formatTime = (timestamp) => {
@@ -166,6 +198,8 @@ const fetchFriendRequests = async (force = false) => {
           ...req,
           status: req.status || 'pending'
         }))
+        // 解析头像
+        resolveAvatars(requests.value)
       }
     } else {
       const errorText = await response.text()
@@ -248,6 +282,8 @@ const setupSocketListeners = () => {
       createdAt: data.createdAt
     })
     showMessage('info', `收到来自 ${data.sender.profile?.displayName || data.sender.userId} 的好友请求`)
+    // 解析新请求的头像
+    resolveAvatars([{ sender: data.sender }])
   })
   
   // 监听好友请求被接受
@@ -290,10 +326,12 @@ const refreshRequests = () => {
 onMounted(() => {
   fetchFriendRequests()
   setupSocketListeners()
+  window.addEventListener('avatar-updated', onAvatarUpdated)
 })
 
 onUnmounted(() => {
   cleanupSocketListeners()
+  window.removeEventListener('avatar-updated', onAvatarUpdated)
 })
 
 // 暴露方法供父组件调用

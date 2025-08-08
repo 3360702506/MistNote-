@@ -1094,7 +1094,7 @@ async function createLoginWindow() {
   });
 }
 async function createMainWindow() {
-  const iconPath = process.env.VITE_DEV_SERVER_URL ? path$1.join(__dirname, "../../public/logo.png") : path$1.join(process.env.DIST, "logo.png");
+  const iconPath = process.env.VITE_DEV_SERVER_URL ? path$1.join(__dirname, "../public/logo.png") : path$1.join(process.env.DIST, "logo.png");
   mainWin = new BrowserWindow({
     title: "MistNote",
     icon: iconPath,
@@ -1356,8 +1356,8 @@ ipcMain.handle("save-file-to-user-folder", async (event, userId, folderType, fil
 ipcMain.handle("get-user-cache-info", async (event, userId) => {
   try {
     if (clientUserDataManager && databaseManager) {
-      const currentUserId = clientUserDataManager.getCurrentUserId();
-      const dbPath = clientUserDataManager.getUserDatabasePath(currentUserId);
+      const currentUserId2 = clientUserDataManager.getCurrentUserId();
+      const dbPath = clientUserDataManager.getUserDatabasePath(currentUserId2);
       const db = await databaseManager.getDatabase(dbPath);
       const sql = `SELECT * FROM user_cache WHERE user_id = ?`;
       const result = await db.getAsync(sql, [userId]);
@@ -1372,8 +1372,8 @@ ipcMain.handle("get-user-cache-info", async (event, userId) => {
 ipcMain.handle("save-user-cache-info", async (event, userId, cacheData) => {
   try {
     if (clientUserDataManager && databaseManager) {
-      const currentUserId = clientUserDataManager.getCurrentUserId();
-      const dbPath = clientUserDataManager.getUserDatabasePath(currentUserId);
+      const currentUserId2 = clientUserDataManager.getCurrentUserId();
+      const dbPath = clientUserDataManager.getUserDatabasePath(currentUserId2);
       const db = await databaseManager.getDatabase(dbPath);
       const sql = `
         INSERT OR REPLACE INTO user_cache 
@@ -1401,8 +1401,8 @@ ipcMain.handle("save-user-cache-info", async (event, userId, cacheData) => {
 ipcMain.handle("get-user-avatar", async (event, userId) => {
   try {
     if (clientUserDataManager) {
-      const currentUserId = clientUserDataManager.getCurrentUserId();
-      const avatarsPath = clientUserDataManager.getUserAvatarsPath(currentUserId);
+      const currentUserId2 = clientUserDataManager.getCurrentUserId();
+      const avatarsPath = clientUserDataManager.getUserAvatarsPath(currentUserId2);
       const avatarPath = path$1.join(avatarsPath, `${userId}.jpg`);
       if (fs.existsSync(avatarPath)) {
         return { success: true, path: avatarPath };
@@ -1425,8 +1425,8 @@ ipcMain.handle("get-user-avatar", async (event, userId) => {
 ipcMain.handle("cache-user-avatar", async (event, userId, avatarUrl) => {
   try {
     if (clientUserDataManager) {
-      const currentUserId = clientUserDataManager.getCurrentUserId();
-      const avatarsPath = clientUserDataManager.getUserAvatarsPath(currentUserId);
+      const currentUserId2 = clientUserDataManager.getCurrentUserId();
+      const avatarsPath = clientUserDataManager.getUserAvatarsPath(currentUserId2);
       const response = await fetch(avatarUrl);
       if (!response.ok) {
         throw new Error(`下载头像失败: ${response.status}`);
@@ -1594,6 +1594,132 @@ if (!global.chatIpcHandlersRegistered) {
     } catch (error) {
       console.error("获取未读消息数失败:", error);
       return 0;
+    }
+  });
+  ipcMain.handle("save-other-user-avatar", async (event, userId, fileName, fileBuffer) => {
+    try {
+      if (clientUserDataManager) {
+        const userDataPath = clientUserDataManager.getUserDataPath(currentUserId);
+        const avatarCachePath = path$1.join(userDataPath, "avatar_cache");
+        if (!fs.existsSync(avatarCachePath)) {
+          fs.mkdirSync(avatarCachePath, { recursive: true });
+        }
+        const userAvatarPath = path$1.join(avatarCachePath, userId);
+        if (!fs.existsSync(userAvatarPath)) {
+          fs.mkdirSync(userAvatarPath, { recursive: true });
+        }
+        const filePath = path$1.join(userAvatarPath, fileName);
+        fs.writeFileSync(filePath, Buffer.from(fileBuffer));
+        return { success: true, filePath };
+      }
+      return { success: false, error: "用户数据管理器未初始化" };
+    } catch (error) {
+      console.error("保存其他用户头像失败:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("save-other-user-avatar-info", async (event, otherUserId, avatarData) => {
+    try {
+      if (clientUserDataManager && databaseManager && currentUserId) {
+        const dbPath = clientUserDataManager.getUserDatabasePath(currentUserId);
+        const db = await databaseManager.getDatabase(dbPath);
+        const createTableSQL = `
+          CREATE TABLE IF NOT EXISTS other_user_avatars (
+            user_id TEXT PRIMARY KEY,
+            filename TEXT,
+            path TEXT,
+            server_url TEXT,
+            download_time TEXT,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `;
+        await db.execAsync(createTableSQL);
+        const sql = `
+          INSERT OR REPLACE INTO other_user_avatars 
+          (user_id, filename, path, server_url, download_time, updated_at)
+          VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `;
+        await db.runAsync(sql, [
+          otherUserId,
+          avatarData.filename,
+          avatarData.path,
+          avatarData.serverUrl,
+          avatarData.downloadTime
+        ]);
+        return { success: true };
+      }
+      return { success: false, error: "数据库未初始化" };
+    } catch (error) {
+      console.error("保存其他用户头像信息失败:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("get-user-avatar-info", async (event, userId) => {
+    try {
+      if (clientUserDataManager && databaseManager && currentUserId) {
+        const dbPath = clientUserDataManager.getUserDatabasePath(currentUserId);
+        const db = await databaseManager.getDatabase(dbPath);
+        const sql = `SELECT * FROM other_user_avatars WHERE user_id = ?`;
+        const result = await db.getAsync(sql, [userId]);
+        if (result) {
+          return { success: true, avatar: result };
+        }
+        if (userId === currentUserId) {
+          const currentUserSql = `
+            SELECT * FROM user_avatars 
+            WHERE is_current = 1 
+            ORDER BY upload_time DESC 
+            LIMIT 1
+          `;
+          const currentUserResult = await db.getAsync(currentUserSql);
+          if (currentUserResult) {
+            return { success: true, avatar: currentUserResult };
+          }
+        }
+        return { success: false, error: "未找到头像信息" };
+      }
+      return { success: false, error: "数据库未初始化" };
+    } catch (error) {
+      console.error("获取用户头像信息失败:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("check-file-exists", async (event, filePath) => {
+    try {
+      return fs.existsSync(filePath);
+    } catch (error) {
+      console.error("检查文件存在失败:", error);
+      return false;
+    }
+  });
+  ipcMain.handle("clean-expired-avatars", async (event, expiryTime) => {
+    try {
+      if (clientUserDataManager && currentUserId) {
+        const userDataPath = clientUserDataManager.getUserDataPath(currentUserId);
+        const avatarCachePath = path$1.join(userDataPath, "avatar_cache");
+        if (fs.existsSync(avatarCachePath)) {
+          const now = Date.now();
+          const cleanupDir = (dirPath) => {
+            const files = fs.readdirSync(dirPath);
+            files.forEach((file) => {
+              const filePath = path$1.join(dirPath, file);
+              const stat = fs.statSync(filePath);
+              if (stat.isFile() && now - stat.mtimeMs > expiryTime) {
+                fs.unlinkSync(filePath);
+                console.log("删除过期头像:", filePath);
+              } else if (stat.isDirectory()) {
+                cleanupDir(filePath);
+              }
+            });
+          };
+          cleanupDir(avatarCachePath);
+        }
+        return { success: true };
+      }
+      return { success: false, error: "用户数据管理器未初始化" };
+    } catch (error) {
+      console.error("清理过期头像失败:", error);
+      return { success: false, error: error.message };
     }
   });
 }

@@ -140,6 +140,7 @@ import {
   ChevronForward as ChevronForwardIcon
 } from '@vicons/ionicons5'
 import AddFriendDialog from './AddFriendDialog.vue'
+import avatarCacheService from '@/services/avatarCacheService'
 import { useUserStore } from '@/stores/user'
 import socketService from '@/services/socket'
 
@@ -162,9 +163,23 @@ const message = useMessage()
 const contactsData = ref([])
 const loading = ref(false)
 
+// 防重复请求控制
+let isLoadingFriends = false
+let lastLoadTime = 0
+const MIN_LOAD_INTERVAL = 5000 // 最小请求间隔5秒
+
 // 获取好友列表
 const loadFriends = async () => {
+  // 防止频繁请求
+  const now = Date.now()
+  if (isLoadingFriends || (now - lastLoadTime < MIN_LOAD_INTERVAL)) {
+    console.log('跳过好友列表加载，避免频繁请求')
+    return
+  }
+  
   try {
+    isLoadingFriends = true
+    lastLoadTime = now
     loading.value = true
     const response = await fetch('http://localhost:5000/api/friends', {
       headers: {
@@ -175,16 +190,32 @@ const loadFriends = async () => {
     if (response.ok) {
       const result = await response.json()
       if (result.success && Array.isArray(result.data)) {
-        contactsData.value = result.data.map(friend => ({
-          id: friend._id,
-          userId: friend.userId,
-          name: friend.displayName || friend.username,
-          avatar: friend.avatar || '/default-avatar.png',
-          isOnline: friend.isOnline || false,
-          signature: '',
-          group: '我的好友',
-          addedAt: friend.addedAt
-        }))
+        // 处理好友数据并获取头像
+        const friendsWithAvatars = await Promise.all(
+          result.data.map(async (friend) => {
+            // 使用头像缓存服务获取用户头像
+            const avatarUrl = await avatarCacheService.getUserAvatar(friend.userId)
+            
+            return {
+              id: friend._id,
+              userId: friend.userId,
+              name: friend.displayName || friend.username,
+              avatar: avatarUrl || friend.avatar || '/default-avatar.png',
+              isOnline: friend.isOnline || false,
+              signature: friend.signature || '',
+              group: '我的好友',
+              addedAt: friend.addedAt
+            }
+          })
+        )
+        
+        contactsData.value = friendsWithAvatars
+        
+        // 预加载所有好友的头像到缓存
+        const userIds = result.data.map(f => f.userId).filter(Boolean)
+        if (userIds.length > 0) {
+          avatarCacheService.preloadAvatars(userIds)
+        }
       }
     }
   } catch (error) {
@@ -192,6 +223,7 @@ const loadFriends = async () => {
     message.error('加载好友列表失败')
   } finally {
     loading.value = false
+    isLoadingFriends = false
   }
 }
 

@@ -197,6 +197,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import messageService from '@/services/messageService'
 import userCacheService from '@/services/userCacheService'
+import avatarCacheService from '@/services/avatarCacheService'
 
 // 定义props
 const props = defineProps({
@@ -240,6 +241,7 @@ const pageSize = 20 // 每页消息数
 const scrollPosition = ref(0) // 记录滚动位置
 const isResizing = ref(false)
 const userAvatar = ref('logo.png')
+const isLoading = ref(false) // 发送消息时的加载状态
 
 // 联系人信息
 const contactInfo = ref({
@@ -327,10 +329,16 @@ const loadMoreMessages = async () => {
         hasMoreMessages.value = result.data.pagination.hasMore
       } else {
         // 如果没有 pagination 信息，根据返回的消息数量判断
-        hasMoreMessages.value = newMessages.length >= pageSize
+        // 如果返回的消息数量小于请求的页大小，说明没有更多消息了
+        hasMoreMessages.value = newMessages.length === pageSize
       }
       
-      console.log(`已加载${newMessages.length}条历史消息，当前共${messages.value.length}条`)
+      // 如果没有新消息，也说明没有更多了
+      if (newMessages.length === 0) {
+        hasMoreMessages.value = false
+      }
+      
+      console.log(`已加载${newMessages.length}条历史消息，当前共${messages.value.length}条，还有更多: ${hasMoreMessages.value}`)
     } else {
       // 没有更多消息了
       hasMoreMessages.value = false
@@ -511,6 +519,9 @@ const handleMessageSending = ({ message, conversationId }) => {
       status: 'sending'
     })
     
+    // 更新可见消息
+    updateVisibleMessages()
+    
     // 滚动到底部
     nextTick(() => {
       scrollToBottom()
@@ -565,13 +576,25 @@ const loadContactInfo = async () => {
   try {
     const userInfo = await userCacheService.getUserInfo(props.contactId)
     if (userInfo) {
+      // 使用头像缓存服务获取真实头像
+      const avatarUrl = await avatarCacheService.getUserAvatar(props.contactId)
+      
       contactInfo.value = {
         id: props.contactId,
         name: userInfo.profile?.displayName || userInfo.username || props.contactName,
-        avatar: userInfo.profile?.avatar || props.contactAvatar,
+        avatar: avatarUrl || userInfo.profile?.avatar || props.contactAvatar || '/default-avatar.png',
         isOnline: userInfo.isOnline || props.isOnline
       }
       console.log('联系人信息已加载:', contactInfo.value)
+    } else {
+      // 如果没有用户信息，至少尝试获取头像
+      const avatarUrl = await avatarCacheService.getUserAvatar(props.contactId)
+      contactInfo.value = {
+        id: props.contactId,
+        name: props.contactName,
+        avatar: avatarUrl || props.contactAvatar || '/default-avatar.png',
+        isOnline: props.isOnline
+      }
     }
   } catch (error) {
     console.error('加载联系人信息失败:', error)

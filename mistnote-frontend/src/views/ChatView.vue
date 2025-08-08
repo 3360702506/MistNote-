@@ -33,13 +33,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Sidebar from '../components/Sidebar.vue'
 import ChatList from '../components/ChatList.vue'
 import ChatWindow from '../components/ChatWindow.vue'
+import avatarCacheService from '@/services/avatarCacheService'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 const selectedChatId = ref(null)
 const selectedChatData = ref(null)
 
@@ -52,6 +55,36 @@ const handleChatSelect = (chatData) => {
   selectedChatId.value = chatData.id
   selectedChatData.value = chatData
 }
+
+// 全局预加载所有好友头像
+const preloadAllAvatars = async () => {
+  try {
+    console.log('开始全局预加载头像...')
+    const response = await fetch('http://localhost:5000/api/friends', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success && data.data) {
+        const friendIds = data.data.map(friend => friend.userId || friend._id).filter(Boolean)
+        console.log(`预加载 ${friendIds.length} 个好友的头像`)
+        await avatarCacheService.preloadAvatars(friendIds)
+        console.log('头像预加载完成')
+      }
+    }
+  } catch (error) {
+    console.error('全局头像预加载失败:', error)
+  }
+}
+
+// 在组件挂载时立即开始预加载头像
+onMounted(() => {
+  console.log('ChatView 已挂载，开始全局头像预加载')
+  preloadAllAvatars()
+})
 
 // 注意：现在使用真实的聊天数据，不再需要模拟数据
 </script>

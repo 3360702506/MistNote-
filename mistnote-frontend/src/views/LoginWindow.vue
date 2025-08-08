@@ -530,7 +530,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(-45deg, #a8e6fc, #ddd6f3, #fbc2eb, #a6c1ee, #f8b7d2, #c9d6ff);
+  background: linear-gradient(-45deg, #e8f4f8, #f0e8f5, #f5e8f0, #e8eff5, #f2e8ee, #ebe8f5);
   background-size: 400% 400%;
   animation: gradientFlow 15s ease infinite;
 }
@@ -718,17 +718,17 @@ onMounted(() => {
   bottom: 0;
   background: radial-gradient(
     circle at 30% 80%,
-    rgba(147, 112, 219, 0.3) 0%,
+    rgba(180, 160, 210, 0.15) 0%,
     transparent 50%
   ),
   radial-gradient(
     circle at 70% 20%,
-    rgba(79, 172, 254, 0.3) 0%,
+    rgba(160, 190, 220, 0.15) 0%,
     transparent 50%
   ),
   radial-gradient(
     circle at 50% 50%,
-    rgba(138, 43, 226, 0.2) 0%,
+    rgba(170, 150, 200, 0.1) 0%,
     transparent 70%
   );
   animation: pulseGlow 4s ease-in-out infinite alternate;
@@ -736,12 +736,12 @@ onMounted(() => {
 
 @keyframes pulseGlow {
   0% {
-    opacity: 0.3;
+    opacity: 0.2;
     transform: scale(1);
   }
   100% {
-    opacity: 0.8;
-    transform: scale(1.1);
+    opacity: 0.4;
+    transform: scale(1.05);
   }
 }
 
